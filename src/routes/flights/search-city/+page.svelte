@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
+	import SearchBar from '@CDNA-Technologies/svelte-vitals/components/search-bar';
 	import { tick, onMount } from 'svelte';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import { getPopularCities, getAirportSearchResults } from '$flights/flights.api.js';
@@ -14,7 +15,6 @@
 	let airports: Airport[] = [];
 	let isSearching = false;
 	let searchText = '';
-	let debounceTimer: ReturnType<typeof setTimeout>;
 
 	onMount(async () => {
 		const result = await getPopularCities();
@@ -30,23 +30,23 @@
 		}
 	});
 
-	function handleSearchInput() {
-		clearTimeout(debounceTimer);
-		if (searchText.trim().length < 2) return;
-		debounceTimer = setTimeout(async () => {
-			isSearching = true;
-			const result = await getAirportSearchResults(searchText);
-			isSearching = false;
-			if (!result.hasError() && result.response?.airportList) {
-				airports = result.response.airportList;
-			}
-		}, 300);
+	async function handleSearchChange(text: string) {
+		isSearching = true;
+		const result = await getAirportSearchResults(text);
+		isSearching = false;
+		if (!result.hasError() && result.response?.airportList) {
+			airports = result.response.airportList;
+		}
 	}
 
 	const handleBackClick = () => history.back();
 
 	const handleAirportSelect = async (airport: Airport) => {
-		const newSelection = { locationName: airport.city, iataCode: airport.iataCode };
+		const newSelection = {
+			locationName: airport.city,
+			iataCode: airport.iataCode,
+			airportName: airport.name
+		};
 		const current = $flightSearchStore;
 		const otherCode =
 			searchType === 'source' ? current.destination.iataCode : current.source.iataCode;
@@ -76,27 +76,28 @@
 		onBackButtonClick={handleBackClick}
 	/>
 
-	<div class="p-4">
-		<input
-			type="text"
-			bind:value={searchText}
-			on:input={handleSearchInput}
+	<div class="p-4 md:p-6 md:max-w-2xl md:mx-auto">
+		<SearchBar
 			placeholder="Enter City/Airport Name"
-			class="w-full h-12 pl-4 pr-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary"
+			padding="p-0"
+			bind:searchText
+			debounceWaitTime={300}
+			minCharacterRequiredForSearch={2}
+			onSearchChange={handleSearchChange}
 		/>
 	</div>
 
-	<div class="flex-1 overflow-y-auto">
-		<h3 class="p-4 heading-3">
+	<div class="flex-1 overflow-y-auto md:max-w-2xl md:mx-auto md:w-full">
+		<h3 class="p-4 md:px-6 heading-3">
 			{searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
 		</h3>
 		{#if isSearching}
-			<p class="px-4 text-sm base-content-light-60">Searching...</p>
+			<p class="px-4 md:px-6 text-sm base-content-light-60">Searching...</p>
 		{/if}
 		<div class="divide-y divide-gray-200">
 			{#each airports as airport}
 				<button class="w-full text-left" on:click={() => handleAirportSelect(airport)}>
-					<div class="p-4">
+					<div class="p-4 md:px-6">
 						<p class="card-sub-heading">
 							{airport.city} <span class="text-xs">({airport.iataCode})</span>
 						</p>

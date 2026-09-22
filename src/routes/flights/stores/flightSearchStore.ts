@@ -3,6 +3,7 @@ import { writable } from 'svelte/store';
 export interface Location {
 	locationName: string;
 	iataCode: string;
+	airportName?: string;
 }
 
 export interface FlightSearchState {

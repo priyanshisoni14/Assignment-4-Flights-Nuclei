@@ -40,14 +40,14 @@
 
 <div class="flex flex-col p-4 space-y-6">
 	<div>
-		<h3 class="nav-text mb-3">Travellers</h3>
+		<h3 class="nav-text mb-3">Select Travellers</h3>
 		{#each $flightConfigStore.guests.sort((a, b) => a.displayOrder - b.displayOrder) as guest}
 			<div class="flex justify-between items-center py-2">
 				<div>
 					<p class="card-sub-heading">{guest.textName}</p>
 					<p class="sub-text base-content-light-60">{guest.subTextName}</p>
 				</div>
-				<div class="flex items-center gap-3 bg-base-200 rounded-full px-2 py-1">
+				<div class="flex items-center gap-3 bg-base-100 rounded-full px-2 py-1">
 					<button on:click={() => bump(guest.guestType, -1)} class="h-8 w-8 text-primary">-</button>
 					<span class="w-6 text-center">{values[guestTypeToField[guest.guestType]]}</span>
 					<button on:click={() => bump(guest.guestType, 1)} class="h-8 w-8 text-primary">+</button>
@@ -57,7 +57,7 @@
 	</div>
 
 	<div>
-		<h3 class="nav-text mb-3">Class</h3>
+		<h3 class="nav-text mb-3">Select Class</h3>
 		{#each $flightConfigStore.travellers as option}
 			<label class="flex items-center gap-3 py-2">
 				<input
@@ -73,6 +73,6 @@
 	</div>
 
 	<button class="w-full bg-primary text-white heading-2 rounded-lg py-3" on:click={handleProceed}>
-		Proceed
+		Done
 	</button>
 </div>

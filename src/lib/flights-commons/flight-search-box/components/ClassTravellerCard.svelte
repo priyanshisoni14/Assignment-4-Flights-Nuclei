@@ -14,12 +14,12 @@
 	const handleProceed = () => closeBottomSheet();
 </script>
 
-<div class="w-full mt-3 bg-base-100 rounded-lg shadow flex divide-x">
-	<button class="flex-1 text-left p-3" on:click={open}>
+<div class="w-full flex divide-x divide-base-300 border-t border-base-300">
+	<button class="flex-1 text-left py-3 px-4 md:px-6" on:click={open}>
 		<p class="sub-text base-content-light-60">Class</p>
 		<p class="heading-3 mt-1">{$flightSearchStore.travelClass}</p>
 	</button>
-	<button class="flex-1 text-left p-3" on:click={open}>
+	<button class="flex-1 text-left py-3 px-4 md:px-6" on:click={open}>
 		<p class="sub-text base-content-light-60">Traveller(s)</p>
 		<p class="heading-3 mt-1">{String(totalTravellers).padStart(2, '0')}</p>
 	</button>

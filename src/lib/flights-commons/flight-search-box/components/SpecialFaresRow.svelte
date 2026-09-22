@@ -12,15 +12,15 @@
 	}
 </script>
 
-<div class="w-full mt-4">
+<div class="w-full border-t border-base-300 px-4 md:px-6 py-3.5">
 	<p class="sub-text base-content-light-60 mb-2">Special Fares (Optional)</p>
 	<div class="flex gap-2 flex-wrap">
 		{#each fares as fare}
 			<button
-				class="px-3 py-1.5 rounded-full border text-sm flex items-center gap-1
+				class="px-3 py-1.5 md:px-4 md:py-2 rounded-full border text-sm flex items-center gap-1.5
 					{$flightSearchStore.specialFare === fare.id
 					? 'bg-primary text-white border-primary'
-					: 'bg-base-100'}"
+					: 'bg-base-200 border-base-300 text-base-content'}"
 				on:click={() => toggle(fare.id)}
 			>
 				{fare.label}

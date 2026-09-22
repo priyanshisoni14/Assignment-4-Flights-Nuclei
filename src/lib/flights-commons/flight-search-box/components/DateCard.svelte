@@ -10,15 +10,15 @@
 	$: departureDay = dayjs($flightSearchStore.departureDate).format('dddd');
 </script>
 
-<div class="w-full mt-3 bg-base-100 rounded-lg shadow flex divide-x">
-	<button class="flex-1 text-left p-3" on:click={handleDepartureClick}>
+<div class="w-full flex divide-x divide-base-300 border-t border-base-300">
+	<button class="flex-1 text-left py-3 px-4 md:px-6" on:click={handleDepartureClick}>
 		<p class="sub-text base-content-light-60">Departure</p>
 		<p class="heading-3 mt-1">{departureLabel}</p>
 		<p class="sub-text base-content-light-60 mt-0.5">{departureDay}</p>
 	</button>
 
 	<button
-		class="flex-1 text-left p-3 flex items-center justify-between"
+		class="flex-1 text-left py-3 px-4 md:px-6 flex items-center justify-between gap-1"
 		on:click={handleReturnClick}
 	>
 		<div>
@@ -30,7 +30,7 @@
 				<p class="sub-text base-content-light-60 mt-0.5">and save more!</p>
 			{/if}
 		</div>
-		<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="text-primary shrink-0">
 			<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
 		</svg>
 	</button>

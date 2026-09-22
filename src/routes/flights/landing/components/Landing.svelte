@@ -1,5 +1,8 @@
+<script context="module" lang="ts">
+	let storeHydrated = false;
+</script>
+
 <script lang="ts">
-	import { ApiUtil } from '@CDNA-Technologies/svelte-vitals/api-util';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -33,6 +36,7 @@
 		const configResult = await fetchFlightsCoreConfig();
 
 		if (configResult.hasError()) {
+			NucleiLogger.logInfo('Flights', 'Landing config fetch failed', configResult.error);
 			setErrorLce(configResult.error);
 			return;
 		}
@@ -46,28 +50,34 @@
 				vendorDetails: searchRequest.vendorDetails ?? []
 			});
 
-			flightSearchStore.update((s) => ({
-				...s,
-				source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
-				destination: { locationName: searchRequest.des.city, iataCode: searchRequest.des.iataCode },
-				departureDate: new Date(Number(searchRequest.departDate)),
-				returnDate:
-					searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
-						? new Date(Number(searchRequest.returnDate))
-						: undefined,
-				adults: searchRequest.adultCount,
-				children: searchRequest.childCount,
-				infants: searchRequest.infantCount,
-				travelClass: searchRequest.travellerClass,
-				nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
-			}));
+			if (!storeHydrated) {
+				flightSearchStore.update((s) => ({
+					...s,
+					source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
+					destination: {
+						locationName: searchRequest.des.city,
+						iataCode: searchRequest.des.iataCode
+					},
+					departureDate: new Date(Number(searchRequest.departDate)),
+					returnDate:
+						searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
+							? new Date(Number(searchRequest.returnDate))
+							: undefined,
+					adults: searchRequest.adultCount,
+					children: searchRequest.childCount,
+					infants: searchRequest.infantCount,
+					travelClass: searchRequest.travellerClass,
+					nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
+				}));
+				storeHydrated = true;
+			}
 		}
 
 		setContentLce();
 	};
 </script>
 
-<div class="h-screen flex flex-col">
+<div class="h-screen flex flex-col bg-base-100">
 	<LandingAppBar />
 
 	{#if $lceStore.isLoading}
@@ -77,8 +87,8 @@
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
 		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 	{:else if $lceStore.hasContent}
-		<div class="overflow-y-scroll w-full bg-primary">
-			<div class="bg-base-100 rounded-t-2xl pt-2 pb-6">
+		<div class="flex-1 overflow-y-auto w-full bg-base-100">
+			<div class="max-w-3xl mx-auto w-full px-4 md:px-6 pt-4 pb-10">
 				<FlightSearchBox />
 				<PromoBanner />
 				<TrendingRoutes />

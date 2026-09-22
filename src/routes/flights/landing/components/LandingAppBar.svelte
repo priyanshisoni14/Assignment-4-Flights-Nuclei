@@ -10,19 +10,28 @@
 	};
 </script>
 
-<AppBar title="Flights" height="80px" enableZIndex showBackButton onBackButtonClick={handleBack}>
-	<div slot="action" class="flex items-center gap-2">
-		<LandingWalletCta />
-		<div class="dropdown dropdown-end">
-			<ThreeDotMenu let:closeDropDown colour="#000000">
-				<li on:click={() => handleMenuClick('My Bookings', closeDropDown)} class="border-t p-3">
-					My Bookings
-				</li>
-				<li on:click={() => handleMenuClick('Web Check-In', closeDropDown)} class="border-t p-3">
-					Web Check-In
-				</li>
-				<li on:click={() => handleMenuClick('Help', closeDropDown)} class="border-t p-3">Help</li>
-			</ThreeDotMenu>
+<div class="appbar-flights">
+	<AppBar title="Flights" height="80px" enableZIndex showBackButton onBackButtonClick={handleBack}>
+		<div slot="action" class="flex items-center gap-2">
+			<span class="text-xs text-white whitespace-nowrap">Rewards</span>
+			<LandingWalletCta />
+			<div class="dropdown dropdown-end">
+				<ThreeDotMenu let:closeDropDown colour="#FFFFFF">
+					<li on:click={() => handleMenuClick('My Bookings', closeDropDown)} class="border-t p-3">
+						My Bookings
+					</li>
+					<li on:click={() => handleMenuClick('Web Check-In', closeDropDown)} class="border-t p-3">
+						Web Check-In
+					</li>
+					<li on:click={() => handleMenuClick('Help', closeDropDown)} class="border-t p-3">Help</li>
+				</ThreeDotMenu>
+			</div>
 		</div>
-	</div>
-</AppBar>
+	</AppBar>
+</div>
+
+<style>
+	.appbar-flights :global(nav.bg-secondary) {
+		background-color: #032f49;
+	}
+</style>
