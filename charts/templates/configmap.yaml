@@ -1,0 +1,13 @@
+{{- if .Values.configs }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+data:
+{{- range $key, $val := .Values.configs }}
+  {{ $key }}: {{ $val | quote }}
+{{- end }}
+{{- end }}

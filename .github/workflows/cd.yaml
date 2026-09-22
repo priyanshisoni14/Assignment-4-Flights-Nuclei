@@ -1,0 +1,593 @@
+name: Continuous Delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag'
+        default: 'v0.0.1-draft'
+        required: true
+      service_type:
+        type: choice
+        description: Service Type
+        required: true
+        options:
+          - all
+          - safari11
+          - universal
+      environment:
+        type: choice
+        description: 'Environment'
+        default: 'uat'
+        required: true
+        options:
+          - uat
+          - production
+          - uae-production
+
+env:
+  PREPROD_REGISTRY: preprodregistry01.azurecr.io
+  PRODUCTION_REGISTRY: nucleiregistry.azurecr.io
+  UAE_PRODUCTION_REGISTRY: crnucleiproductionuae.azurecr.io
+  ENVIRONMENT: ${{inputs.environment}}
+  RELEASE_TAG: ${{inputs.release_tag}}
+  EPHEMERAL_DIR: ephemeral
+  CHART_DIR: ephemeral/charts
+  KUBECONFIG: ephemeral/kubeconfig
+  HELM_EXPERIMENTAL_OCI: 1
+  SLACK_CHANNEL: svelte-development
+  ACTION_URL: ${{github.server_url}}/${{github.event.repository.full_name}}/actions/runs/${{github.run_id}}
+  TRIGGERER: ${{github.server_url}}/${{github.triggering_actor}}|${{github.triggering_actor}}
+  RELEASE_NAME: ${{github.event.repository.name}}:${{inputs.release_tag}}
+
+jobs:
+  production-approval:
+    name: Approve Production deployment
+    if: ${{inputs.environment == 'production'}}
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{secrets.APPROVAL_WORKFLOW_APP_ID}}
+          private_key: ${{secrets.APPROVAL_WORKFLOW_APP_PRIVATE_KEY}}
+
+      - name: Wait for approval
+        uses: trstringer/manual-approval@v1
+        timeout-minutes: 5
+        with:
+          secret: ${{steps.generate_token.outputs.token}}
+          approvers: mmstack-svelte-release-approvers
+          minimum-approvals: 1
+          issue-title: '${{env.ENVIRONMENT}} deployment ${{env.RELEASE_NAME}} triggered by ${{github.triggering_actor}}'
+
+  uae-production-approval:
+    name: Approve UAE Production deployment
+    if: ${{inputs.environment == 'uae-production'}}
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{secrets.APPROVAL_WORKFLOW_APP_ID}}
+          private_key: ${{secrets.APPROVAL_WORKFLOW_APP_PRIVATE_KEY}}
+
+      - name: Wait for approval
+        uses: trstringer/manual-approval@v1
+        timeout-minutes: 5
+        with:
+          secret: ${{steps.generate_token.outputs.token}}
+          approvers: mmstack-svelte-release-approvers
+          minimum-approvals: 1
+          issue-title: '${{env.ENVIRONMENT}} deployment ${{env.RELEASE_NAME}} triggered by ${{github.triggering_actor}}'
+
+  helm-release-tag:
+    name: Get Helm release tag
+    runs-on: [self-hosted, frontend-runner]
+    outputs:
+      HELM_RELEASE_TAG: ${{env.HELM_RELEASE_TAG}}
+    steps:
+      - name: Extract Helm release tag
+        run: |-
+          HELM_RELEASE_TAG=$(echo "$(cut -d '.' -f 1,2 <<< "$RELEASE_TAG")" | tr  "."  "-")
+          echo "HELM_RELEASE_TAG=$HELM_RELEASE_TAG" >> $GITHUB_ENV
+
+  deploy-uat-chart:
+    name: Deploy chart(s) to UAT
+    needs: helm-release-tag
+    if: ${{inputs.environment == 'uat'}}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      NAMESPACE: mwa-nuclei
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{env.RELEASE_TAG}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v1
+        with:
+          version: '3.6.3'
+
+      - name: Login to UAT ACR
+        run: |-
+          echo ${{secrets.PREPROD_REGISTRY_TOKEN}} | helm registry login ${{env.PREPROD_REGISTRY}} --username ${{secrets.PREPROD_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Import chart
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          make import-chart
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Add Preprod kubeconfig
+        run: |-
+          echo "${{secrets.PREPROD_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Deploy safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Deploy universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Check readiness of safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Check readiness of universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Cache landing page in server
+        timeout-minutes: 5
+        run: make cache-landing
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          helm registry logout ${{env.PREPROD_REGISTRY}}
+
+  deploy-production-chart:
+    name: Deploy chart(s) to Production
+    needs: [production-approval, helm-release-tag]
+    if: ${{inputs.environment == 'production'}}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      NAMESPACE: prod-mwa-nuclei
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{env.RELEASE_TAG}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v1
+        with:
+          version: '3.6.3'
+
+      - name: Login to Production ACR
+        run: |-
+          echo ${{secrets.PRODUCTION_REGISTRY_TOKEN}} | helm registry login ${{env.PRODUCTION_REGISTRY}} --username ${{secrets.PRODUCTION_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Import chart
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          make import-chart
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Add Production kubeconfig
+        run: |-
+          echo "${{secrets.PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Deploy safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Deploy universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Check readiness of safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Check readiness of universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          helm registry logout ${{env.PRODUCTION_REGISTRY}}
+
+  deploy-uae-production-chart:
+    name: Deploy chart(s) to UAE Production
+    needs: [uae-production-approval, helm-release-tag]
+    if: ${{inputs.environment == 'uae-production'}}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      NAMESPACE: prod-mwa-nuclei
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{env.RELEASE_TAG}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v1
+        with:
+          version: '3.6.3'
+
+      - name: Login to UAE Production ACR
+        run: |-
+          echo ${{secrets.UAE_PRODUCTION_REGISTRY_TOKEN}} | helm registry login ${{env.UAE_PRODUCTION_REGISTRY}} --username ${{secrets.UAE_PRODUCTION_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Import chart
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          make import-chart
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Add UAE Production kubeconfig
+        run: |-
+          echo "${{secrets.UAE_PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Deploy safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Deploy universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        run: make deploy-service
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          ENV: ${{env.ENVIRONMENT}}
+          TAG: ${{env.RELEASE_TAG}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+
+      - name: Check readiness of safari11 service
+        if: ${{ inputs.service_type == 'safari11' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: safari11
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Check readiness of universal service
+        if: ${{ inputs.service_type == 'universal' || inputs.service_type == 'all' }}
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          SERVICE_TYPE: universal
+          HELM_RELEASE_TAG: ${{needs.helm-release-tag.outputs.HELM_RELEASE_TAG}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          helm registry logout ${{env.UAE_PRODUCTION_REGISTRY}}
+
+  production-slack-notification:
+    name: Notify Production result in Slack
+    needs: [production-approval, deploy-production-chart]
+    if: ${{always() && !cancelled() && needs.production-approval.result != 'skipped'}}
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Print prod deployment result
+        run: echo "${{needs.deploy-production-chart.result}}"
+
+      - name: Send Slack approval failure notification
+        id: approval-failure-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.production-approval.result == 'failure'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#FF5F1F",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:no_good: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} not approved*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* No\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack success notification
+        id: success-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.deploy-production-chart.result == 'success'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#3FB950",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:tada: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} is successful*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* Yes\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack failure notification
+        id: failure-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.production-approval.result == 'success' && needs.deploy-production-chart.result == 'failure'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#F85149",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:see_no_evil: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} failed*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* Yes\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  uae-production-slack-notification:
+    name: Notify UAE Production result in Slack
+    needs: [uae-production-approval, deploy-uae-production-chart]
+    if: ${{always() && !cancelled() && needs.uae-production-approval.result != 'skipped'}}
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Print prod deployment result
+        run: echo "${{needs.deploy-uae-production-chart.result}}"
+
+      - name: Send Slack approval failure notification
+        id: approval-failure-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.uae-production-approval.result == 'failure'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#FF5F1F",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:no_good: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} not approved*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* No\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack success notification
+        id: success-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.deploy-uae-production-chart.result == 'success'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#3FB950",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:tada: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} is successful*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* Yes\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Send Slack failure notification
+        id: failure-notification
+        uses: slackapi/slack-github-action@v1.18.0
+        if: ${{needs.uae-production-approval.result == 'success' && needs.deploy-uae-production-chart.result == 'failure'}}
+        with:
+          payload: |
+            {
+              "channel": "${{env.SLACK_CHANNEL}}",
+              "attachments": [
+                {
+                  "color": "#F85149",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "<${{env.ACTION_URL}}|:see_no_evil: *${{env.ENVIRONMENT}} deployment: ${{env.RELEASE_NAME}} failed*>"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": ":woman-raising-hand: *Triggered by* <${{env.TRIGGERER}}>\n:writing_hand: *Approved:* Yes\n\ncc: @channel"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

@@ -1,0 +1,58 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  gateways:
+  {{- range .Values.istio.gateways }}
+  - {{ . }}
+  {{- end }}
+  hosts:
+  {{- range .Values.istio.hosts }}
+  - {{ . }}
+  {{- end }}
+  http:
+    - match:
+      {{- if .Values.istio.match.uri }}
+      - uri:
+      {{- range $index, $uri := .Values.istio.match.uri }}
+          {{ $uri.format }}: {{ $uri.value }}
+      {{- if $uri.rewrite }}
+      rewrite:
+        uri: {{ $uri.rewrite }} 
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.istio.match.headers }}
+        headers:
+      {{- range $index, $header := .Values.istio.match.headers }}
+          {{ $header.name }}:
+            {{ $header.format }}: {{ $header.value }}
+      {{- end }}
+      {{- end }}
+      route:
+        - destination:
+            host: {{ .Values.istio.destination.safari11.host }}
+            port:
+              number: {{ .Values.service.port }}
+    - match:
+      {{- if .Values.istio.match.uri }}
+      - uri:
+      {{- range $index, $uri := .Values.istio.match.uri }}
+          {{ $uri.format }}: {{ $uri.value }}
+      {{- if $uri.rewrite }}
+      rewrite:
+        uri: {{ $uri.rewrite }} 
+      {{- end }}
+      {{- end }}
+      {{- end }}
+      route:
+        - destination:
+            host: {{ include "chart.fullname" . }}
+            port:
+              number: {{ .Values.service.port }}
+{{- end }}

@@ -1,0 +1,730 @@
+name: Continuous Integration
+
+on:
+  release:
+    types:
+      - published
+
+env:
+  PREPROD_REGISTRY: preprodregistry01.azurecr.io
+  PRODUCTION_REGISTRY: nucleiregistry.azurecr.io
+  UAE_PRODUCTION_REGISTRY: crnucleiproductionuae.azurecr.io
+  CHART_DIR: charts
+
+jobs:
+  release-info:
+    name: Get release info
+    runs-on: [self-hosted, frontend-runner]
+    outputs:
+      ENVIRONMENT: ${{env.ENVIRONMENT}}
+      RELEASE_TAG: ${{env.RELEASE_TAG}}
+      NAMESPACE: ${{env.NAMESPACE}}
+      HELM_RELEASE_TAG: ${{env.HELM_RELEASE_TAG}}
+      SERVICE_TYPE: ${{ env.SERVICE_TYPE }}
+    steps:
+      - name: Get release
+        id: get-release
+        uses: bruceadams/get-release@v1.2.2
+        env:
+          GITHUB_TOKEN: ${{github.token}}
+
+      - name: Extract environment and release tag
+        run: |-
+          RELEASE_TAG=$(echo ${GITHUB_REF##*/})
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          HELM_RELEASE_TAG=$(echo "$(cut -d '.' -f 1,2 <<< "$RELEASE_TAG")" | tr  "."  "-")
+          echo "HELM_RELEASE_TAG=$HELM_RELEASE_TAG" >> $GITHUB_ENV
+          ENVIRONMENT=$(python3 -c "import sys; print(sys.argv[1].split('/')[0])" "${{steps.get-release.outputs.body}}")
+          SERVICE_TYPE=$(python3 -c "import sys; print(sys.argv[1].split('/')[1])" "${{ steps.get-release.outputs.body }}")
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "SERVICE_TYPE=$SERVICE_TYPE" >> $GITHUB_ENV
+
+      - name: Input validation
+        run: |-
+          if [ "${{env.ENVIRONMENT}}" != "uat" ] && [ "${{env.ENVIRONMENT}}" != "production" ] && [ "${{env.ENVIRONMENT}}" != "uae-production" ];
+          then
+            exit 1;
+          fi
+          if [ "${{env.SERVICE_TYPE}}" != "safari11" ] && [ "${{env.SERVICE_TYPE}}" != "universal" ] && [ "${{env.SERVICE_TYPE}}" != "all" ];
+          then
+            exit 1;
+          fi
+
+      - name: Namespace selection
+        run: |-
+          if [ "${{env.ENVIRONMENT}}" == "uat" ];
+          then
+            NAMESPACE=mwa-nuclei
+          elif [ "${{env.ENVIRONMENT}}" == "production" ] || [ "${{env.ENVIRONMENT}}" == "uae-production" ];
+          then
+            NAMESPACE=prod-mwa-nuclei
+          fi
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+
+  safari11-scan:
+    name: safari11 scan
+    needs: release-info
+    if: ${{needs.release-info.outputs.SERVICE_TYPE == 'safari11' || needs.release-info.outputs.SERVICE_TYPE == 'all'}}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+      EPHEMERAL_DIR: ephemeral
+      KUBECONFIG: ephemeral/kubeconfig
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Hadolint Dockerfile scan
+        uses: hadolint/hadolint-action@v2.1.0
+        with:
+          dockerfile: safari11/Dockerfile
+          no-fail: false
+          verbose: false
+          failure-threshold: error
+
+      - name: Display Hadolint results
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          script: |-
+            const results = `${process.env.HADOLINT_RESULTS}`;
+            console.log(results)
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Helm lint
+        run: |-
+          make helm-lint
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Add UAT kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'uat'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.PREPROD_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Add Production kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'production'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Add UAE Production kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'uae-production'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.UAE_PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Helm render
+        run: |-
+          make helm-render
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          NAMESPACE: ${{needs.release-info.outputs.NAMESPACE}}
+          HELM_RELEASE_TAG: ${{needs.release-info.outputs.HELM_RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ${{env.EPHEMERAL_DIR}}
+
+  universal-scan:
+    name: universal scan
+    needs: release-info
+    if: ${{needs.release-info.outputs.SERVICE_TYPE == 'universal' || needs.release-info.outputs.SERVICE_TYPE == 'all'}}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+      EPHEMERAL_DIR: ephemeral
+      KUBECONFIG: ephemeral/kubeconfig
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Hadolint Dockerfile scan
+        uses: hadolint/hadolint-action@v2.1.0
+        with:
+          dockerfile: universal/Dockerfile
+          no-fail: false
+          verbose: false
+          failure-threshold: error
+
+      - name: Display Hadolint results
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          script: |-
+            const results = `${process.env.HADOLINT_RESULTS}`;
+            console.log(results)
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Helm lint
+        run: |-
+          make helm-lint
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Add UAT kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'uat'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.PREPROD_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Add Production kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'production'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Add UAE Production kubeconfig
+        if: ${{needs.release-info.outputs.ENVIRONMENT == 'uae-production'}}
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.UAE_PRODUCTION_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Helm render
+        run: |-
+          make helm-render
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          HELM_RELEASE_TAG: ${{needs.release-info.outputs.HELM_RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf ${{env.EPHEMERAL_DIR}}
+
+  push-safari11-uat-image:
+    name: Push safari11 UAT image
+    needs: [release-info, safari11-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'uat' && (needs.release-info.outputs.SERVICE_TYPE == 'safari11' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: 10m0s
+
+      - name: Login to UAT ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.PREPROD_REGISTRY}}
+          username: ${{secrets.PREPROD_REGISTRY_USERNAME}}
+          password: ${{secrets.PREPROD_REGISTRY_TOKEN}}
+
+      - name: Publish image to UAT ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.PREPROD_REGISTRY}}
+
+  push-universal-uat-image:
+    name: Push universal UAT image
+    needs: [release-info, universal-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'uat' && (needs.release-info.outputs.SERVICE_TYPE == 'universal' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+          timeout: 10m0s
+
+      - name: Login to UAT ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.PREPROD_REGISTRY}}
+          username: ${{secrets.PREPROD_REGISTRY_USERNAME}}
+          password: ${{secrets.PREPROD_REGISTRY_TOKEN}}
+
+      - name: Publish image to UAT ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.PREPROD_REGISTRY}}
+
+  publish-uat-chart:
+    name: Publish UAT chart
+    needs: [release-info, push-safari11-uat-image, push-universal-uat-image]
+    if: ${{ always() && !cancelled() && needs.release-info.outputs.ENVIRONMENT == 'uat' && (needs.push-safari11-uat-image.result == 'success' || needs.push-universal-uat-image.result == 'success') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - name: 'Checkout repository on branch: ${{github.REF}}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Update versions in chart
+        run: |-
+          sed -i -e "s|RELEASE_TAG|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+          sed -i -e "s|v1.0.0|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Login to UAT ACR
+        run: |-
+          echo ${{secrets.PREPROD_REGISTRY_TOKEN}} | helm registry login ${{env.PREPROD_REGISTRY}} --username ${{secrets.PREPROD_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Save and publish chart to UAT ACR
+        run: |-
+          make publish-chart
+        env:
+          DOCKER_REGISTRY: ${{env.PREPROD_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: helm registry logout ${{env.PREPROD_REGISTRY}}
+
+  push-safari11-production-image:
+    name: Push safari11 Production image
+    needs: [release-info, safari11-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'production' && (needs.release-info.outputs.SERVICE_TYPE == 'safari11' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to Production ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.PRODUCTION_REGISTRY}}
+          username: ${{secrets.PRODUCTION_REGISTRY_USERNAME}}
+          password: ${{secrets.PRODUCTION_REGISTRY_TOKEN}}
+
+      - name: Publish image to Production ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.PRODUCTION_REGISTRY}}
+
+  push-universal-production-image:
+    name: Push universal Production image
+    needs: [release-info, universal-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'production' && (needs.release-info.outputs.SERVICE_TYPE == 'universal' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to Production ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.PRODUCTION_REGISTRY}}
+          username: ${{secrets.PRODUCTION_REGISTRY_USERNAME}}
+          password: ${{secrets.PRODUCTION_REGISTRY_TOKEN}}
+
+      - name: Publish image to Production ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.PRODUCTION_REGISTRY}}
+
+  publish-production-chart:
+    name: Publish Production chart
+    needs: [release-info, push-safari11-production-image, push-universal-production-image]
+    if: ${{ always() && !cancelled() && needs.release-info.outputs.ENVIRONMENT == 'production' && (needs.push-safari11-production-image.result == 'success' || needs.push-universal-production-image.result == 'success') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - name: 'Checkout repository on branch: ${{github.REF}}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Update versions in chart
+        run: |-
+          sed -i -e "s|RELEASE_TAG|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+          sed -i -e "s|v1.0.0|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Login to Production ACR
+        run: |-
+          echo ${{secrets.PRODUCTION_REGISTRY_TOKEN}} | helm registry login ${{env.PRODUCTION_REGISTRY}} --username ${{secrets.PRODUCTION_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Save and publish chart to Production ACR
+        run: |-
+          make publish-chart
+        env:
+          DOCKER_REGISTRY: ${{env.PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: helm registry logout ${{env.PRODUCTION_REGISTRY}}
+
+  push-safari11-uae-production-image:
+    name: Push safari11 UAE Production image
+    needs: [release-info, safari11-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'uae-production' && (needs.release-info.outputs.SERVICE_TYPE == 'safari11' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to UAE Production ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.UAE_PRODUCTION_REGISTRY}}
+          username: ${{secrets.UAE_PRODUCTION_REGISTRY_USERNAME}}
+          password: ${{secrets.UAE_PRODUCTION_REGISTRY_TOKEN}}
+
+      - name: Publish image to Production ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.UAE_PRODUCTION_REGISTRY}}
+
+  push-universal-uae-production-image:
+    name: Push universal UAE Production image
+    needs: [release-info, universal-scan]
+    if: ${{ needs.release-info.outputs.ENVIRONMENT == 'uae-production' && (needs.release-info.outputs.SERVICE_TYPE == 'universal' || needs.release-info.outputs.SERVICE_TYPE == 'all') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{needs.release-info.outputs.HELM_RELEASE_TAG}}|g" svelte.config.js
+
+      - name: Update VITE Environment variables
+        run: make update-vite-env
+        env:
+          ENV: ${{needs.release-info.outputs.ENVIRONMENT}}
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          GITHUB_USERNAME: ${{secrets.ACTIONS_BOT_GH_USERNAME}}
+          GITHUB_TOKEN: ${{secrets.ACTIONS_BOT_GH_TOKEN}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to UAE Production ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.UAE_PRODUCTION_REGISTRY}}
+          username: ${{secrets.UAE_PRODUCTION_REGISTRY_USERNAME}}
+          password: ${{secrets.UAE_PRODUCTION_REGISTRY_TOKEN}}
+
+      - name: Publish image to Production ACR
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: docker logout ${{env.UAE_PRODUCTION_REGISTRY}}
+
+  publish-uae-production-chart:
+    name: Publish UAE Production chart
+    needs: [release-info, push-safari11-uae-production-image, push-universal-uae-production-image]
+    if: ${{ always() && !cancelled() && needs.release-info.outputs.ENVIRONMENT == 'uae-production' && (needs.push-safari11-uae-production-image.result == 'success' || needs.push-universal-uae-production-image.result == 'success') }}
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      HELM_EXPERIMENTAL_OCI: 1
+    steps:
+      - name: 'Checkout repository on branch: ${{github.REF}}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Update versions in chart
+        run: |-
+          sed -i -e "s|RELEASE_TAG|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+          sed -i -e "s|v1.0.0|${{needs.release-info.outputs.RELEASE_TAG}}|g" ${CHART_DIR}/Chart.yaml
+        env:
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Login to UAE Production ACR
+        run: |-
+          echo ${{secrets.UAE_PRODUCTION_REGISTRY_TOKEN}} | helm registry login ${{env.UAE_PRODUCTION_REGISTRY}} --username ${{secrets.UAE_PRODUCTION_REGISTRY_USERNAME}} --password-stdin
+
+      - name: Save and publish chart to Production ACR
+        run: |-
+          make publish-chart
+        env:
+          DOCKER_REGISTRY: ${{env.UAE_PRODUCTION_REGISTRY}}
+          TAG: ${{needs.release-info.outputs.RELEASE_TAG}}
+
+      - name: Cleanup
+        if: always()
+        run: helm registry logout ${{env.UAE_PRODUCTION_REGISTRY}}

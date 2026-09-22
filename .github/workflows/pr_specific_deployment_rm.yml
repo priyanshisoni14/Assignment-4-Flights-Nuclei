@@ -1,0 +1,64 @@
+name: Remove PR Specific Deployment
+
+on:
+  pull_request:
+    types: [labeled]
+
+env:
+  PR_NUMBER: ${{ github.event.number }}
+  NAMESPACE: mwa-nuclei
+  KUBECONFIG: ephemeral/kubeconfig
+  EPHEMERAL_DIR: ephemeral
+
+jobs:
+  env-setup:
+    if: ${{ github.event.label.name == 'Purge PR Deployment' }}
+    name: Setup Env for removing deployment
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Add development kubeconfig
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.DEV_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+  remove-universal:
+    if: ${{ github.event.label.name == 'Purge PR Deployment' }}
+    name: Remove Universal Deployment
+    needs: env-setup
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Remove service
+        run: make remove-service
+        env:
+          NAMESPACE: ${{env.NAMESPACE}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+          SERVICE_TYPE: universal
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+  remove-safari11:
+    if: ${{ github.event.label.name == 'Purge PR Deployment' }}
+    name: Remove Safari11 Deployment
+    needs: remove-universal
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Remove service
+        run: make remove-service
+        env:
+          NAMESPACE: ${{env.NAMESPACE}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+          SERVICE_TYPE: safari11
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+  cleanup:
+    if: ${{ github.event.label.name == 'Purge PR Deployment' }}
+    name: Cleans up
+    needs: remove-safari11
+    runs-on: [self-hosted, frontend-runner]
+    steps:
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}

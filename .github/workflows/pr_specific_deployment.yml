@@ -1,0 +1,371 @@
+name: PR Specific Deployment
+
+on:
+  pull_request:
+    types: [labeled]
+
+env:
+  DEV_REGISTRY: stagingnuclei01.azurecr.io
+  PR_NUMBER: ${{ github.event.number }}
+  ENVIRONMENT: dev
+  RELEASE_TAG: ${{github.sha}}
+  CHART_DIR: charts
+  KUBECONFIG: ephemeral/kubeconfig
+  EPHEMERAL_DIR: ephemeral
+
+jobs:
+  safari11-scan:
+    if: ${{ github.event.label.name == 'Ready for Review' }}
+    name: safari11 scan
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Hadolint Dockerfile scan
+        uses: hadolint/hadolint-action@v2.1.0
+        with:
+          dockerfile: safari11/Dockerfile
+          no-fail: false
+          verbose: false
+          failure-threshold: error
+
+      - name: Display Hadolint results
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |-
+            const results = `${process.env.HADOLINT_RESULTS}`;
+            console.log(results)
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Helm lint
+        run: |-
+          make helm-lint
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Add development kubeconfig
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.DEV_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Helm render safari11 service type
+        run: |-
+          make helm-render
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{env.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          NAMESPACE: ${{env.NAMESPACE}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          docker logout ${{env.DEV_REGISTRY}}
+
+  universal-scan:
+    if: ${{ github.event.label.name == 'Ready for Review' }}
+    name: universal scan
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{github.REF}}
+
+      - name: Hadolint Dockerfile scan
+        uses: hadolint/hadolint-action@v2.1.0
+        with:
+          dockerfile: universal/Dockerfile
+          no-fail: false
+          verbose: false
+          failure-threshold: error
+
+      - name: Display Hadolint results
+        if: always()
+        uses: actions/github-script@v6
+        with:
+          script: |-
+            const results = `${process.env.HADOLINT_RESULTS}`;
+            console.log(results)
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Helm lint
+        run: |-
+          make helm-lint
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+
+      - name: Add development kubeconfig
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.DEV_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Helm render universal service type
+        run: |-
+          make helm-render
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{env.ENVIRONMENT}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          NAMESPACE: ${{env.NAMESPACE}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          docker logout ${{env.DEV_REGISTRY}}
+
+  safari11-deploy:
+    if: ${{ github.event.label.name == 'Ready for Review' }}
+    name: safari11 deploy
+    needs: safari11-scan
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: safari11
+      NAMESPACE: mwa-nuclei
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.REF }}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{env.PR_NUMBER}}|g" svelte.config.js
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{ env.DEV_REGISTRY }}
+          GITHUB_USERNAME: ${{ secrets.ACTIONS_BOT_GH_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_BOT_GH_TOKEN }}
+          TAG: ${{env.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.DEV_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner for safari11 image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to Marketplace Dev ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.DEV_REGISTRY}}
+          username: ${{secrets.DEV_REGISTRY_USERNAME}}
+          password: ${{secrets.DEV_REGISTRY_TOKEN}}
+
+      - name: Publish image
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.DOCKER_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Add development kubeconfig
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.DEV_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Update app version in chart
+        run: |-
+          sed -i -e "s|RELEASE_TAG|${{env.RELEASE_TAG}}|g" ./charts/Chart.yaml
+
+      - name: Deploy safari11 service
+        run: make deploy-service
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{env.ENVIRONMENT}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          TAG: ${{env.RELEASE_TAG}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+
+      - name: Check readiness of safari11 service
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      # - name: Cache landing page in server
+      #   timeout-minutes: 5
+      #   run: make cache-landing
+      #   env:
+      #     ENV: ${{env.ENVIRONMENT}}
+      #     HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          docker logout ${{env.DEV_REGISTRY}}
+
+  universal-deploy:
+    if: ${{ github.event.label.name == 'Ready for Review' }}
+    name: universal deploy
+    needs: universal-scan
+    runs-on: [self-hosted, frontend-runner]
+    env:
+      SERVICE_TYPE: universal
+      NAMESPACE: mwa-nuclei
+    steps:
+      - name: 'Checkout repository on branch: ${{ github.REF }}'
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.REF }}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v3
+        with:
+          version: '3.6.3'
+
+      - name: Update Helm release tag version in Svelte config
+        run: sed -i -e "s|dev|${{env.PR_NUMBER}}|g" svelte.config.js
+
+      - name: Build image
+        run: make build-image
+        env:
+          DOCKER_REGISTRY: ${{ env.DEV_REGISTRY }}
+          GITHUB_USERNAME: ${{ secrets.ACTIONS_BOT_GH_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_BOT_GH_TOKEN }}
+          TAG: ${{env.RELEASE_TAG}}
+          NPM_PACKAGE_PUBLISH_TOKEN: ${{secrets.NPM_PACKAGE_PUBLISH_TOKEN}}
+
+      - name: Add image ref to env
+        run: make image-ref
+        env:
+          DOCKER_REGISTRY: ${{env.DEV_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Run Trivy vulnerability scanner for safari11 image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{env.IMAGE_REF}}
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login to Marketplace Dev ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{env.DEV_REGISTRY}}
+          username: ${{secrets.DEV_REGISTRY_USERNAME}}
+          password: ${{secrets.DEV_REGISTRY_TOKEN}}
+
+      - name: Publish image
+        run: make publish-image
+        env:
+          DOCKER_REGISTRY: ${{env.DOCKER_REGISTRY}}
+          TAG: ${{env.RELEASE_TAG}}
+
+      - name: Add development kubeconfig
+        run: |-
+          mkdir ${{env.EPHEMERAL_DIR}}
+          echo "${{secrets.DEV_KUBECONFIG}}" > ${KUBECONFIG}
+          chmod 400 ${KUBECONFIG}
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      - name: Update app version in chart
+        run: |-
+          sed -i -e "s|RELEASE_TAG|${{env.RELEASE_TAG}}|g" ./charts/Chart.yaml
+
+      - name: Deploy universal service
+        run: make deploy-service
+        env:
+          KUBECONFIG: ${{env.KUBECONFIG}}
+          ENV: ${{env.ENVIRONMENT}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          CHART_DIR: ${{env.CHART_DIR}}
+          TAG: ${{env.RELEASE_TAG}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+
+      - name: Check readiness of universal service
+        timeout-minutes: 5
+        run: make readiness-check
+        env:
+          ENV: ${{env.ENVIRONMENT}}
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+          NAMESPACE: ${{env.NAMESPACE}}
+          KUBECONFIG: ${{env.KUBECONFIG}}
+
+      # - name: Cache landing page in server
+      #   timeout-minutes: 5
+      #   run: make cache-landing
+      #   env:
+      #     ENV: ${{env.ENVIRONMENT}}
+      #     HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+
+      - name: Cleanup
+        if: always()
+        run: |-
+          rm -rf ${{env.EPHEMERAL_DIR}}
+          docker logout ${{env.DEV_REGISTRY}}
+
+  comment:
+    if: ${{ github.event.label.name == 'Ready for Review' }}
+    name: Comment
+    needs: universal-deploy
+    runs-on: [self-hosted, frontend-runner]
+    permissions:
+      pull-requests: write
+    steps:
+      - id: t_url
+        name: Get target url
+        run: |
+          data=`make get-target-url`
+          echo TARGET_URL=$data >> $GITHUB_OUTPUT
+        env:
+          HELM_RELEASE_TAG: ${{env.PR_NUMBER}}
+
+      - name: add target url comment to PR
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            **Test URL** ${{steps.t_url.outputs.TARGET_URL}}
