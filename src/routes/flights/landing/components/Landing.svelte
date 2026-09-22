@@ -1,25 +1,27 @@
-<script context="module" lang="ts">
-	let storeHydrated = false;
-</script>
-
 <script lang="ts">
+	import { fetchFlightsCoreConfig } from '$flights/api/flights-api.js';
+	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
+	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
 		lceStore,
 		setContentLce,
+		setErrorLce,
 		setLoadingLce
 	} from '@CDNA-Technologies/svelte-vitals/error-handling';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import type { SvelteComponentTyped } from 'svelte';
 	import { onMount } from 'svelte';
+	import { hasFetchedConfig } from '../appState.js';
 	import LandingAppBar from './LandingAppBar.svelte';
-	import PromoBanner from './PromoBanner.svelte';
-	import TrendingRoutes from './TrendingRoutes.svelte';
-	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
-	import { fetchFlightsCoreConfig } from '$flights/flights.api.js';
-	import { setErrorLce } from '@CDNA-Technologies/svelte-vitals/error-handling';
-	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
-	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
+	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
+	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
+
+	const TypedLandingAppBar = LandingAppBar as unknown as typeof SvelteComponentTyped;
+	const TypedPrimaryLoader = PrimaryLoader as unknown as typeof SvelteComponentTyped;
+	const TypedErrorHandling = ErrorHandling as unknown as typeof SvelteComponentTyped;
 
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
@@ -33,10 +35,14 @@
 	}
 
 	const fetchScreenData = async () => {
+		if ($hasFetchedConfig) {
+			setContentLce();
+			return;
+		}
+
 		const configResult = await fetchFlightsCoreConfig();
 
 		if (configResult.hasError()) {
-			NucleiLogger.logInfo('Flights', 'Landing config fetch failed', configResult.error);
 			setErrorLce(configResult.error);
 			return;
 		}
@@ -50,48 +56,48 @@
 				vendorDetails: searchRequest.vendorDetails ?? []
 			});
 
-			if (!storeHydrated) {
-				flightSearchStore.update((s) => ({
-					...s,
-					source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
-					destination: {
-						locationName: searchRequest.des.city,
-						iataCode: searchRequest.des.iataCode
-					},
-					departureDate: new Date(Number(searchRequest.departDate)),
-					returnDate:
-						searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
-							? new Date(Number(searchRequest.returnDate))
-							: undefined,
-					adults: searchRequest.adultCount,
-					children: searchRequest.childCount,
-					infants: searchRequest.infantCount,
-					travelClass: searchRequest.travellerClass,
-					nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
-				}));
-				storeHydrated = true;
-			}
+			flightSearchStore.update((s) => ({
+				...s,
+				source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
+				destination: { locationName: searchRequest.des.city, iataCode: searchRequest.des.iataCode },
+				departureDate: new Date(Number(searchRequest.departDate)),
+				isRoundTrip: searchRequest.isRoundTrip,
+				returnDate:
+					searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
+						? new Date(Number(searchRequest.returnDate))
+						: undefined,
+				adults: searchRequest.adultCount,
+				children: searchRequest.childCount,
+				infants: searchRequest.infantCount,
+				travelClass: searchRequest.travellerClass,
+				nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
+			}));
 		}
 
+		hasFetchedConfig.set(true);
 		setContentLce();
 	};
 </script>
 
 <div class="h-screen flex flex-col bg-base-100">
-	<LandingAppBar />
+	<svelte:component this={TypedLandingAppBar} />
 
 	{#if $lceStore.isLoading}
 		<div class="h-screen flex flex-col justify-center">
-			<PrimaryLoader />
+			<svelte:component this={TypedPrimaryLoader} />
 		</div>
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
-		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		<svelte:component
+			this={TypedErrorHandling}
+			errorHandling={$lceStore.errorDetails}
+			on:submit={handleRetry}
+		/>
 	{:else if $lceStore.hasContent}
-		<div class="flex-1 overflow-y-auto w-full bg-base-100">
-			<div class="max-w-3xl mx-auto w-full px-4 md:px-6 pt-4 pb-10">
+		<div class="flex-1 overflow-y-auto w-full bg-base-200 pb-10">
+			<div class="px-4 pt-3">
 				<FlightSearchBox />
-				<PromoBanner />
-				<TrendingRoutes />
+				<UpcomingFlights />
+				<RecentSearches />
 			</div>
 		</div>
 	{/if}

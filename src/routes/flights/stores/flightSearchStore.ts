@@ -11,6 +11,7 @@ export interface FlightSearchState {
 	destination: Location;
 	departureDate: Date;
 	returnDate?: Date;
+	isRoundTrip: boolean;
 	adults: number;
 	children: number;
 	infants: number;
@@ -20,14 +21,15 @@ export interface FlightSearchState {
 }
 
 export const flightSearchStore = writable<FlightSearchState>({
-	source: { locationName: 'Bangalore', iataCode: 'BLR' },
-	destination: { locationName: 'New Delhi', iataCode: 'DEL' },
-	departureDate: new Date('2026-03-17'),
+	source: { locationName: 'Bangalore', iataCode: 'BLR', airportName: 'Bangalore International Airport' },
+	destination: { locationName: 'New Delhi', iataCode: 'DEL', airportName: 'Indira Gandhi International Airport' },
+	departureDate: new Date(),
 	returnDate: undefined,
+	isRoundTrip: false,
 	adults: 1,
 	children: 0,
 	infants: 0,
-	travelClass: 'Economy',
-	nonStopOnly: true,
+	travelClass: 'ECONOMY',
+	nonStopOnly: false,
 	specialFare: null
 });
