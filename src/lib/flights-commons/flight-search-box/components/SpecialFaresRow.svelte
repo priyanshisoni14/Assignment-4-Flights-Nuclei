@@ -12,7 +12,7 @@
 	}
 </script>
 
-<div class="w-11/12 mx-auto mt-4">
+<div class="w-full mt-4">
 	<p class="sub-text base-content-light-60 mb-2">Special Fares (Optional)</p>
 	<div class="flex gap-2 flex-wrap">
 		{#each fares as fare}

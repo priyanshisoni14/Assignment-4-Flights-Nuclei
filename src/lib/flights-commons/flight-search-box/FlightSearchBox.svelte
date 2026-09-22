@@ -11,25 +11,27 @@
 	};
 </script>
 
-<LocationCard />
-<DateCard />
-<ClassTravellerCard />
-<SpecialFaresRow />
+<div class="w-11/12 max-w-md mx-auto">
+	<LocationCard />
+	<DateCard />
+	<ClassTravellerCard />
+	<SpecialFaresRow />
 
-<label class="flex items-center gap-2 w-11/12 mx-auto mt-4 sub-text">
-	<input
-		type="checkbox"
-		bind:checked={$flightSearchStore.nonStopOnly}
-		class="checkbox checkbox-primary h-5 w-5"
-	/>
-	Show only non-stop flights
-</label>
+	<label class="flex items-center gap-2 w-full mx-auto mt-4 sub-text">
+		<input
+			type="checkbox"
+			bind:checked={$flightSearchStore.nonStopOnly}
+			class="checkbox checkbox-primary h-5 w-5"
+		/>
+		Show only non-stop flights
+	</label>
 
-<div class="w-11/12 mx-auto mt-4">
-	<button
-		class="w-full h-14 bg-primary hover:bg-primary-focus text-white heading-2 rounded-lg"
-		on:click={handleSearch}
-	>
-		Search Flights
-	</button>
+	<div class="w-full mx-auto mt-4">
+		<button
+			class="w-full h-14 bg-primary hover:bg-primary-focus text-white heading-2 rounded-lg"
+			on:click={handleSearch}
+		>
+			Search Flights
+		</button>
+	</div>
 </div>

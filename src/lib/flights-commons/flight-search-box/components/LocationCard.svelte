@@ -1,29 +1,39 @@
 <script lang="ts">
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
+	import { base } from '$app/paths';
 
-	// TODO: once /flights/search-city exists, navigate there instead of logging
-	const handleSourceClick = () => console.log('open source city picker');
-	const handleDestinationClick = () => console.log('open destination city picker');
-
+	const handleSourceClick = () =>
+		NavigatorUtils.navigateTo({
+			url: `${base}/flights/search-city?type=source&title=Select Origin`
+		});
+	const handleDestinationClick = () =>
+		NavigatorUtils.navigateTo({
+			url: `${base}/flights/search-city?type=destination&title=Select Destination`
+		});
 	const handleSwap = () => {
 		flightSearchStore.update((s) => ({ ...s, source: s.destination, destination: s.source }));
 	};
 </script>
 
-<div class="relative w-11/12 mx-auto mt-4 bg-base-100 rounded-lg shadow p-4">
+<div class="relative w-full mt-4 bg-base-100 rounded-lg shadow p-4">
 	<button class="w-full text-left pb-3 border-b" on:click={handleSourceClick}>
 		<p class="sub-text base-content-light-60">From</p>
-		<div class="flex items-baseline gap-2">
-			<p class="heading-3">{$flightSearchStore.source.locationName}</p>
-			<span class="sub-text border rounded px-1">{$flightSearchStore.source.iataCode}</span>
+		<div class="flex items-baseline gap-2 min-w-0">
+			<p class="heading-3 truncate">{$flightSearchStore.source.locationName}</p>
+			<span class="sub-text border rounded px-1 flex-shrink-0"
+				>{$flightSearchStore.source.iataCode}</span
+			>
 		</div>
 	</button>
 
 	<button class="w-full text-left pt-3" on:click={handleDestinationClick}>
 		<p class="sub-text base-content-light-60">To</p>
-		<div class="flex items-baseline gap-2">
-			<p class="heading-3">{$flightSearchStore.destination.locationName}</p>
-			<span class="sub-text border rounded px-1">{$flightSearchStore.destination.iataCode}</span>
+		<div class="flex items-baseline gap-2 min-w-0">
+			<p class="heading-3 truncate">{$flightSearchStore.source.locationName}</p>
+			<span class="sub-text border rounded px-1 flex-shrink-0"
+				>{$flightSearchStore.source.iataCode}</span
+			>
 		</div>
 	</button>
 

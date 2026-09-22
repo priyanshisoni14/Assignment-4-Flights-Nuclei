@@ -14,7 +14,7 @@
 	const handleProceed = () => closeBottomSheet();
 </script>
 
-<div class="w-11/12 mx-auto mt-3 bg-base-100 rounded-lg shadow flex divide-x">
+<div class="w-full mt-3 bg-base-100 rounded-lg shadow flex divide-x">
 	<button class="flex-1 text-left p-3" on:click={open}>
 		<p class="sub-text base-content-light-60">Class</p>
 		<p class="heading-3 mt-1">{$flightSearchStore.travelClass}</p>
