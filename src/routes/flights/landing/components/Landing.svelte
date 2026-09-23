@@ -47,7 +47,8 @@
 			return;
 		}
 
-		const searchRequest = configResult.response?.searchRequest;
+		const searchRequest = (configResult.response as { searchRequest?: any } | undefined)
+			?.searchRequest;
 		if (searchRequest) {
 			flightConfigStore.set({
 				guests: searchRequest.guests ?? [],
@@ -55,7 +56,10 @@
 				configMap: searchRequest.configMap ?? {},
 				vendorDetails: searchRequest.vendorDetails ?? []
 			});
-
+			const matchedClass = searchRequest.travellers?.find(
+				(t: any) =>
+					t.value.replace(' Class', '').toLowerCase() === searchRequest.travellerClass.toLowerCase()
+			);
 			flightSearchStore.update((s) => ({
 				...s,
 				source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
@@ -69,7 +73,7 @@
 				adults: searchRequest.adultCount,
 				children: searchRequest.childCount,
 				infants: searchRequest.infantCount,
-				travelClass: searchRequest.travellerClass,
+				travelClass: matchedClass?.key ?? searchRequest.travellerClass.toUpperCase(),
 				nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
 			}));
 		}

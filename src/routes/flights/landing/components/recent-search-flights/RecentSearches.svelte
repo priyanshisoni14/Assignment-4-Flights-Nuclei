@@ -1,16 +1,15 @@
+<!-- src/routes/flights/flights-common/recent-search-flights/RecentSearches.svelte -->
 <script>
 	import { flights as RecentSearches } from '$flights/FlightsData.js';
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>
 
-<div>
-	<h2 class="heading-2 mb-3">Recent Searches</h2>
+<div class="mb-4 px-4">
+	<h2 class="heading-2">Recent Searches</h2>
+</div>
 
-	<div class="flex space-x-3 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
-		{#each RecentSearches as search}
-			<div class="flex-shrink-0 w-[85%] snap-start">
-				<SearchItemCard {...search} />
-			</div>
-		{/each}
-	</div>
+<div class="flex flex-col space-y-2 bg-base-100 divide-y divide-gray-200">
+	{#each RecentSearches as search}
+		<SearchItemCard from={search.from} to={search.to} dateRange={search.dateRange} />
+	{/each}
 </div>

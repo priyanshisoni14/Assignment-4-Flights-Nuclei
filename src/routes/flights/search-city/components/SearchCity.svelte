@@ -5,9 +5,9 @@
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import SearchBar from '@CDNA-Technologies/svelte-vitals/components/search-bar';
 	import { onMount, tick } from 'svelte';
+	import { popularCities as staticFallbackCities } from '../cityData.js';
 	import type { Airport } from '../types.js';
 	import CityCard from './CityCard.svelte';
-	import { popularCities as staticFallbackCities } from '../cityData.js';
 
 	const appBarTitle = $page.url.searchParams.get('title') ?? 'Search City';
 	const searchType = $page.url.searchParams.get('type');
