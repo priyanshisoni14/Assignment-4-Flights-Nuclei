@@ -26,7 +26,7 @@
 
 <div class="relative">
 	<button class="w-full text-left px-4 py-3.5 flex items-center gap-3" on:click={handleSourceClick}>
-		<div class="flex-shrink-0 opacity-70">
+		<div class="flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5">
 			<FlightIcon />
 		</div>
 		<div class="min-w-0 flex-1">
@@ -40,13 +40,16 @@
 		</div>
 	</button>
 
-	<div class="border-t border-base-300 mx-4" />
+	<div class="border-t border-gray-200 mx-4" />
 
 	<button
 		class="w-full text-left px-4 py-3.5 flex items-center gap-3"
 		on:click={handleDestinationClick}
 	>
-		<div class="flex-shrink-0 opacity-70" style="transform: rotate(90deg);">
+		<div
+			class="flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5"
+			style="transform: rotate(135deg);"
+		>
 			<FlightIcon />
 		</div>
 		<div class="min-w-0 flex-1">
@@ -61,7 +64,7 @@
 	</button>
 
 	<button
-		class="absolute right-4 top-1/2 -translate-y-1/2 bg-base-100 rounded-full"
+		class="absolute right-4 top-1/2 -translate-y-1/2 bg-white rounded-full w-9 h-9 flex items-center justify-center border-2 border-primary text-primary"
 		on:click={handleSwapButtonClick}
 		aria-label="Swap source and destination"
 	>

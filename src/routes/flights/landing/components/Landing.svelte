@@ -93,8 +93,8 @@
 			on:submit={handleRetry}
 		/>
 	{:else if $lceStore.hasContent}
-		<div class="flex-1 overflow-y-auto w-full bg-base-200 pb-10">
-			<div class="px-4 pt-3">
+		<div class="flex-1 overflow-y-auto w-full bg-gray-100 pb-10">
+			<div class="px-4 pt-4 space-y-6">
 				<FlightSearchBox />
 				<UpcomingFlights />
 				<RecentSearches />

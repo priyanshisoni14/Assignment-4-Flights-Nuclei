@@ -1,5 +1,6 @@
 <script>
 	import ArrowRightIcon from '$lib/flights-commons/icons/ArrowRightIcon.svelte';
+	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 
 	export let airlineLogo = '';
 	export let airlineName = '';
@@ -11,13 +12,9 @@
 	export let duration = '';
 </script>
 
-<div
-	class="bg-base-100 border border-base-300 rounded-xl p-3 flex items-center space-x-3
-	       hover:shadow-md transition-shadow duration-200 cursor-pointer"
->
-	<!-- Airline Logo -->
+<div class="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3 cursor-pointer">
 	<div
-		class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-primary flex items-center justify-center"
+		class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-primary flex items-center justify-center"
 	>
 		{#if airlineLogo}
 			<img
@@ -26,26 +23,33 @@
 				alt={airlineName || 'Airline logo'}
 			/>
 		{:else}
-			<span class="heading-3 text-primary-content">{airlineName.slice(0, 2).toUpperCase()}</span>
+			<span class="text-xs font-bold text-primary-content"
+				>{airlineName.slice(0, 2).toUpperCase()}</span
+			>
 		{/if}
 	</div>
 
-	<!-- Flight Details -->
 	<div class="flex-1 min-w-0">
-		<div class="flex items-center gap-2 min-w-0">
+		<div class="flex items-center gap-1.5 min-w-0">
 			<p class="card-heading flex-shrink-0 truncate">{from}</p>
-			<ArrowRightIcon class="flex-shrink-0" />
+			<span class="flex-shrink-0"><ArrowRightIcon /></span>
 			<p class="card-heading truncate">{to}</p>
 		</div>
 
-		<p class="sub-text base-content-light-60 mt-1 truncate">{dateRange}</p>
+		<p class="sub-text base-content-light-60 mt-0.5 truncate">{dateRange}</p>
 
-		<div class="content-2m mt-2 flex items-center gap-2 text-base-content-light-60">
+		<div
+			class="mt-1 flex items-center gap-1.5 text-sm text-base-content whitespace-nowrap overflow-hidden"
+		>
 			<span>{travellers} Traveller{travellers > 1 ? 's' : ''}</span>
 			<span class="text-base-300">|</span>
 			<span>{travelClass}</span>
 			<span class="text-base-300">|</span>
 			<span>{duration}</span>
 		</div>
+	</div>
+
+	<div class="flex-shrink-0 opacity-50">
+		<ChevronRightIcon />
 	</div>
 </div>

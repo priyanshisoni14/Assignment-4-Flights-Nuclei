@@ -1,26 +1,20 @@
-import { ApiUtil, type DataOrError } from '@CDNA-Technologies/svelte-vitals/api-util';
+import { ApiUtil } from '@CDNA-Technologies/svelte-vitals/api-util';
 
-export async function fetchFlightsCoreConfig(): Promise<DataOrError<any>> {
+export async function fetchFlightsCoreConfig() {
 	return await ApiUtil.post(
 		'/com.gonuclei.flights.v1.LandingService/getConfig'
 	);
 }
 
-export async function getFlightBookingDetails(
-	requestType: any,
-	resultsPerPage: number,
-	pageNumberToGet: number
-): Promise<DataOrError<any>> {
-	const flightBookingsRequest = {
-		paginationRequest: {
-			resultsPerPage,
-			pageNumberToGet
-		},
-		requestType
-	};
-
+export async function getPopularCities() {
 	return await ApiUtil.post(
-		'/com.gonuclei.flights.v1.FlightTicketService/GetAllBookings',
-		flightBookingsRequest
+		'/com.gonuclei.flights.v1.LandingService/getPopularCities'
+	);
+}
+
+export async function getAirportSearchResults(searchText: string) {
+	return await ApiUtil.post(
+		'/com.gonuclei.flights.v1.LandingService/getAirportSearchResults',
+		{ searchText: searchText.trim() }
 	);
 }

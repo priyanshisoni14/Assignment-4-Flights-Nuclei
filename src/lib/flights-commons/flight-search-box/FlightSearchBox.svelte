@@ -13,17 +13,23 @@
 	};
 </script>
 
-<div class="w-full bg-base-100 rounded-2xl shadow-md divide-y divide-base-300 overflow-hidden">
-	<FlightsLocationSelector />
-	<FlightsDateSelector />
-	<ClassTravellerRow />
-
-	<div class="p-4">
-		<button
-			class="w-full h-14 bg-primary hover:bg-primary-focus text-white heading-2 rounded-xl"
-			on:click={handleSearch}
-		>
-			Search Flights
-		</button>
+<div class="w-full space-y-4">
+	<div class="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-200 overflow-hidden">
+		<FlightsLocationSelector />
 	</div>
+
+	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+		<FlightsDateSelector />
+	</div>
+
+	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+		<ClassTravellerRow />
+	</div>
+
+	<button
+		class="w-full h-14 bg-primary hover:bg-primary-focus active:scale-[0.99] text-white heading-2 rounded-xl transition-all duration-150"
+		on:click={handleSearch}
+	>
+		Search Flights
+	</button>
 </div>

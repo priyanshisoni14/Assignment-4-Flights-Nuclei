@@ -1,69 +1,80 @@
 <script lang="ts">
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
-	import { clamp, getGuestLimits } from '$lib/flights-commons/utils/guest-limits-util.js';
 	import { createEventDispatcher } from 'svelte';
-	import { get } from 'svelte/store';
 
 	const dispatch = createEventDispatcher();
 
-	// seed local state from the current store, not from config defaults —
-	// if the user already picked values, re-opening the sheet shouldn't reset them
-	const initial = get(flightSearchStore);
-	let adults = initial.adults;
-	let children = initial.children;
-	let infants = initial.infants;
-	let selectedClass = initial.travelClass;
+	let adults = $flightSearchStore.adults;
+	let children = $flightSearchStore.children;
+	let infants = $flightSearchStore.infants;
+	let travelClass = $flightSearchStore.travelClass;
 
-	function updateCount(guestType: 'ADULT' | 'CHILD' | 'INFANT', change: number) {
-		const limits = getGuestLimits(guestType, flightConfigStore);
-		if (guestType === 'ADULT') adults = clamp(adults + change, limits.min, limits.max);
-		if (guestType === 'CHILD') children = clamp(children + change, limits.min, limits.max);
-		if (guestType === 'INFANT') infants = clamp(infants + change, limits.min, limits.max);
+	const guestTypeToField: Record<string, 'adults' | 'children' | 'infants'> = {
+		ADULT: 'adults',
+		CHILD: 'children',
+		INFANT: 'infants'
+	};
+	const values: Record<string, number> = { adults, children, infants };
+
+	// Figma orders classes Economy → Premium Economy → Business
+	// but the config API doesn't guarantee that order, so we force it here.
+	const CLASS_ORDER = ['economy class', 'premium economy class', 'business class'];
+	function classRank(value: string) {
+		const idx = CLASS_ORDER.indexOf(value.toLowerCase());
+		return idx === -1 ? CLASS_ORDER.length : idx;
+	}
+	$: sortedTravellers = [...$flightConfigStore.travellers].sort(
+		(a, b) => classRank(a.value) - classRank(b.value)
+	);
+
+	function findGuestConfig(guestType: string) {
+		return $flightConfigStore.guests.find((g) => g.guestType === guestType);
 	}
 
-	function countFor(guestType: string) {
-		if (guestType === 'ADULT') return adults;
-		if (guestType === 'CHILD') return children;
-		return infants;
+	function bump(guestType: string, delta: number) {
+		const field = guestTypeToField[guestType];
+		const config = findGuestConfig(guestType);
+		if (!config) return;
+		const next = Math.max(config.minValue, Math.min(config.maxValue, values[field] + delta));
+		values[field] = next;
+		if (field === 'adults') adults = next;
+		if (field === 'children') children = next;
+		if (field === 'infants') infants = next;
 	}
 
 	function handleProceed() {
-		flightSearchStore.update((s) => ({
-			...s,
-			adults,
-			children,
-			infants,
-			travelClass: selectedClass
-		}));
+		flightSearchStore.update((s) => ({ ...s, adults, children, infants, travelClass }));
 		dispatch('proceed');
 	}
 </script>
 
 <div class="flex flex-col p-4 space-y-6">
 	<div>
-		<h3 class="nav-text mb-4">Select Traveller(s)</h3>
-		<div class="space-y-4">
-			{#each $flightConfigStore.guests as guest}
-				{@const limits = getGuestLimits(guest.guestType, flightConfigStore)}
+		<h3 class="text-lg font-bold mb-4">Select Travellers</h3>
+		<div class="space-y-5">
+			{#each $flightConfigStore.guests.sort((a, b) => a.displayOrder - b.displayOrder) as guest}
+				{@const config = findGuestConfig(guest.guestType)}
 				<div class="flex justify-between items-center">
 					<div>
-						<p class="card-sub-heading">{guest.textName}</p>
+						<p class="font-semibold">{guest.textName}</p>
 						<p class="sub-text base-content-light-60">{guest.subTextName}</p>
 					</div>
-					<div class="flex items-center bg-base-200 rounded-xl px-1 py-1">
+					<div class="flex items-center gap-3">
 						<button
-							class="px-3 cta-text text-primary disabled:opacity-30"
-							on:click={() => updateCount(guest.guestType, -1)}
-							disabled={countFor(guest.guestType) <= limits.min}
+							on:click={() => bump(guest.guestType, -1)}
+							class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center text-lg leading-none text-gray-600 disabled:opacity-30"
+							disabled={config && values[guestTypeToField[guest.guestType]] <= config.minValue}
 						>
 							−
 						</button>
-						<span class="px-4 font-semibold w-8 text-center">{countFor(guest.guestType)}</span>
+						<span class="font-semibold w-4 text-center"
+							>{values[guestTypeToField[guest.guestType]]}</span
+						>
 						<button
-							class="px-3 cta-text text-primary disabled:opacity-30"
-							on:click={() => updateCount(guest.guestType, 1)}
-							disabled={countFor(guest.guestType) >= limits.max}
+							on:click={() => bump(guest.guestType, 1)}
+							class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center text-lg leading-none text-gray-600 disabled:opacity-30"
+							disabled={config && values[guestTypeToField[guest.guestType]] >= config.maxValue}
 						>
 							+
 						</button>
@@ -74,22 +85,35 @@
 	</div>
 
 	<div>
-		<h3 class="nav-text mb-4">Select Class</h3>
-		<div class="space-y-3">
-			{#each $flightConfigStore.travellers as classOption}
-				<label class="flex items-center gap-4">
+		<h3 class="text-lg font-bold mb-4">Select Class</h3>
+		<div class="space-y-4">
+			{#each sortedTravellers as option}
+				<label class="relative flex items-center gap-3 cursor-pointer">
 					<input
 						type="radio"
 						name="travelClass"
-						bind:group={selectedClass}
-						value={classOption.key}
-						class="radio radio-primary"
+						bind:group={travelClass}
+						value={option.key}
+						class="absolute opacity-0 w-0 h-0"
 					/>
-					<span class="card-sub-heading">{classOption.value}</span>
+					<span
+						class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
+							{travelClass === option.key ? 'border-primary' : 'border-gray-300'}"
+					>
+						{#if travelClass === option.key}
+							<span class="w-2.5 h-2.5 rounded-full bg-primary" />
+						{/if}
+					</span>
+					<span class="font-medium">{option.value}</span>
 				</label>
 			{/each}
 		</div>
 	</div>
 
-	<button on:click={handleProceed} class="btn btn-primary w-full">Done</button>
+	<button
+		on:click={handleProceed}
+		class="w-full h-14 bg-primary hover:bg-primary-focus active:scale-[0.99] text-white heading-2 rounded-xl transition-all duration-150"
+	>
+		Done
+	</button>
 </div>

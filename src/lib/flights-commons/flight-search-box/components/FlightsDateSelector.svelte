@@ -17,7 +17,7 @@
 </script>
 
 <div class="flex items-center gap-3 px-4 py-3.5">
-	<div class="w-6 flex-shrink-0 opacity-70 [&>svg]:w-5 [&>svg]:h-5">
+	<div class="w-6 flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5">
 		<CalendarIcon />
 	</div>
 
@@ -30,7 +30,7 @@
 			</p>
 		</button>
 
-		<div class="w-px self-stretch bg-base-300 mx-3" />
+		<div class="w-px self-stretch bg-gray-200 mx-3" />
 
 		<button class="flex-1 text-left min-w-0" on:click={handleReturnClick}>
 			<p class="sub-text base-content-light-60">Return</p>
