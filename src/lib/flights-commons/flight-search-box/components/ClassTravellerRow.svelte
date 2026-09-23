@@ -147,9 +147,7 @@
 
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
-		<div slot="action" class="flex justify-center pt-2 pb-1">
-			<div class="w-10 h-1 rounded-full bg-gray-300" />
-		</div>
+		<div slot="action" class="flex justify-center pt-2 pb-1" />
 		<div slot="details">
 			<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
 		</div>
