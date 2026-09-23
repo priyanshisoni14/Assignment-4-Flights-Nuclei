@@ -9,17 +9,21 @@
 	import type { Airport } from '../types.js';
 	import CityCard from './CityCard.svelte';
 
+	//extract the title from the url
 	const appBarTitle = $page.url.searchParams.get('title') ?? 'Search City';
 	const searchType = $page.url.searchParams.get('type');
 
+	// api result is stored here
 	let airports: Airport[] = [];
 	let isSearching = false;
 	let searchText = '';
 
 	onMount(async () => {
 		const result = await getPopularCities();
-		if (!result.hasError() && result.response?.airportList) {
-			airports = result.response.airportList;
+		const airportList = (result.response as { airportList?: Airport[] } | undefined)?.airportList;
+		// if the api call succeeds and returns a result
+		if (!result.hasError() && airportList) {
+			airports = airportList;
 		} else {
 			// fall back to static list only if the live call fails
 			airports = staticFallbackCities.map((c: any) => ({
@@ -30,17 +34,21 @@
 		}
 	});
 
+	// when the user types in the search box
 	async function handleSearchChange(text: string) {
 		isSearching = true;
 		const result = await getAirportSearchResults(text);
 		isSearching = false;
-		if (!result.hasError() && result.response?.airportList) {
-			airports = result.response.airportList;
+		const airportList = (result.response as { airportList?: Airport[] } | undefined)?.airportList;
+		if (!result.hasError() && airportList) {
+			airports = airportList;
 		}
 	}
 
+	// navigate back to the previous screen
 	const handleBackClick = () => history.back();
 
+	// when an airport is selected from the list
 	const handleAirportSelect = async (airport: Airport) => {
 		const newSelection = {
 			locationName: airport.city,
@@ -48,14 +56,15 @@
 			airportName: airport.name
 		};
 		const current = $flightSearchStore;
+		// get the other end of the trip
 		const otherCode =
 			searchType === 'source' ? current.destination.iataCode : current.source.iataCode;
-
+		// if the user selects the same airport as the other end of the trip give alert
 		if (newSelection.iataCode === otherCode) {
 			alert('Source and Destination cannot be the same.');
 			return;
 		}
-
+		// update the store with the new selection
 		flightSearchStore.update((store) => {
 			if (searchType === 'source') store.source = newSelection;
 			else if (searchType === 'destination') store.destination = newSelection;
@@ -68,6 +77,7 @@
 			JSON.stringify(newSelection)
 		);
 
+		// waits until svelte has updated the store
 		await tick();
 		history.back();
 	};

@@ -21,10 +21,12 @@
 
 	const TypedPrimaryLoader = PrimaryLoader as unknown as typeof SvelteComponentTyped;
 	const TypedErrorHandling = ErrorHandling as unknown as typeof SvelteComponentTyped;
+	// when the landing screen is mounted
 	let hasFetchedConfig = false;
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
 		setLoadingLce();
+		// fetch the backend config and update the store
 		await fetchScreenData();
 	});
 	// when API fails
