@@ -96,30 +96,27 @@
 		</div>
 	</div>
 
-	<div>
-		<p class="sub-text base-content-light-60 mb-3">Special Fares (Optional)</p>
-		<div class="flex gap-2 flex-wrap pt-2">
-			{#each SPECIAL_FARES as fare}
-				<div class="relative">
-					{#if fare.badge}
-						<span
-							class="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 bg-red-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap"
-						>
-							{fare.badge}
-						</span>
-					{/if}
-					<button
-						class="px-3 py-1.5 rounded-full border sub-text transition-colors
-						{$flightSearchStore.specialFare === fare.name
-							? 'bg-primary text-white border-primary'
-							: 'border-gray-300 text-base-content hover:border-gray-400'}"
-						on:click={() => toggleSpecialFare(fare.name)}
+	<div class="flex gap-2 flex-wrap pt-3">
+		{#each SPECIAL_FARES as fare}
+			<div class="relative">
+				{#if fare.badge}
+					<span
+						class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-red-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap"
 					>
-						{fare.name}
-					</button>
-				</div>
-			{/each}
-		</div>
+						{fare.badge}
+					</span>
+				{/if}
+				<button
+					class="px-3 py-1.5 rounded-full border sub-text transition-colors
+				{$flightSearchStore.specialFare === fare.name
+						? 'bg-primary text-white border-primary'
+						: 'border-gray-300 text-base-content hover:border-gray-400'}"
+					on:click={() => toggleSpecialFare(fare.name)}
+				>
+					{fare.name}
+				</button>
+			</div>
+		{/each}
 	</div>
 
 	<label class="relative flex items-center gap-2 cursor-pointer w-fit">

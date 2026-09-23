@@ -62,21 +62,25 @@
 			return store;
 		});
 
+		// persist across a hard reload / native-bridge navigation back to Landing
+		sessionStorage.setItem(
+			searchType === 'source' ? 'flights_selected_source' : 'flights_selected_destination',
+			JSON.stringify(newSelection)
+		);
+
 		await tick();
 		history.back();
 	};
 </script>
 
 <div class="flex flex-col h-screen bg-base-100">
-	<div class="appbar-flights">
-		<AppBar
-			title={appBarTitle}
-			height="80px"
-			enableZIndex
-			showBackButton
-			onBackButtonClick={handleBackClick}
-		/>
-	</div>
+	<AppBar
+		title={appBarTitle}
+		height="80px"
+		enableZIndex
+		showBackButton
+		onBackButtonClick={handleBackClick}
+	/>
 
 	<div class="p-4 md:p-6 md:max-w-2xl md:mx-auto">
 		<SearchBar
@@ -103,9 +107,3 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	.appbar-flights :global(nav.bg-secondary) {
-		background-color: #032f49;
-	}
-</style>

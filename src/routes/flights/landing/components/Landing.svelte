@@ -60,11 +60,22 @@
 				(t: any) =>
 					t.value.replace(' Class', '').toLowerCase() === searchRequest.travellerClass.toLowerCase()
 			);
+
+			// check for a city the user already picked on the search-city screen —
+			// without this, the API's default source/destination silently overwrites
+			// whatever was just selected, every time this screen re-runs fetchScreenData
+			const savedSource = sessionStorage.getItem('flights_selected_source');
+			const savedDestination = sessionStorage.getItem('flights_selected_destination');
+
 			// taking existing state and updating it with the new values
 			flightSearchStore.update((s) => ({
 				...s,
-				source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
-				destination: { locationName: searchRequest.des.city, iataCode: searchRequest.des.iataCode },
+				source: savedSource
+					? JSON.parse(savedSource)
+					: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
+				destination: savedDestination
+					? JSON.parse(savedDestination)
+					: { locationName: searchRequest.des.city, iataCode: searchRequest.des.iataCode },
 				departureDate: new Date(Number(searchRequest.departDate)),
 				isRoundTrip: searchRequest.isRoundTrip,
 				returnDate:
