@@ -15,6 +15,7 @@
 	import type { SvelteComponentTyped } from 'svelte';
 	import { onMount } from 'svelte';
 	import LandingAppBar from './LandingAppBar.svelte';
+	import PromoBanner from './PromoBanner.svelte';
 	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
 	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
 
@@ -109,9 +110,18 @@
 			on:submit={handleRetry}
 		/>
 	{:else if $lceStore.hasContent}
-		<div class="flex-1 overflow-y-auto w-full bg-gray-100 pb-10">
-			<div class="px-4 pt-4 space-y-6">
+		<div class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
+			<div class="w-full px-6 pt-4 space-y-6 md:max-w-2xl md:mx-auto">
+				<div class="flex items-center gap-1.5">
+					<p class="sub-text text-[#676767]">
+						Compare and fly:
+						<span class="font-semibold text-[#f05325]">cleartrip</span>
+						<span class="font-semibold text-[#3c5769]">EaseMyTrip</span>
+					</p>
+				</div>
+
 				<FlightSearchBox />
+				<PromoBanner />
 				<UpcomingFlights />
 				<RecentSearches />
 			</div>

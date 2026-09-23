@@ -3,7 +3,7 @@
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>
 
-<div class="mb-4 px-4">
+<div class="mb-4">
 	<h2 class="heading-2">Recent Searches</h2>
 </div>
 

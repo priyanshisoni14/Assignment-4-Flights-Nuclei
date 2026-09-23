@@ -14,7 +14,7 @@
 </script>
 
 <div class="w-full space-y-4">
-	<div class="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-200 overflow-hidden">
+	<div class="rounded-2xl divide-y overflow-hidden">
 		<FlightsLocationSelector />
 	</div>
 

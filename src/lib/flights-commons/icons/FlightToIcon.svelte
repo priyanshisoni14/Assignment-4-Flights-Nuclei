@@ -1,6 +1,6 @@
 <script lang="ts">
 	export let size = 48;
-	export let color = '#8C8C8C';
+	export let color = '#929292';
 </script>
 
 <svg
@@ -11,13 +11,28 @@
 	xmlns="http://www.w3.org/2000/svg"
 	aria-hidden="true"
 >
+	<!-- Airplane -->
 	<path
-		d="M8 29.5L15.5 28L22 21.5L16 9.5C15.7 8.8 16 8 16.7 7.7L19.2 6.7C19.8 6.5 20.5 6.7 20.9 7.2L29 17L35.5 14.5C38.2 13.5 40.8 14.1 42.5 15.8C43.2 16.5 43 17.6 42.1 18L31.5 23.5L25 29L17 34H8.5C7.5 34 7 32.9 7.7 32.2L8 29.5Z"
+		d="M9 19.5L15 23L20 14L18 8
+		C17.8 7.2 18.2 6.5 19 6.2
+		L21.2 5.5
+		C21.9 5.3 22.6 5.6 23 6.2
+		L27 13L33 17
+		L39 22
+		C41.2 23.8 42.5 26.3 42.5 29
+		C42.5 30 41.4 30.6 40.5 30
+		L29 23.5
+		L22 22
+		L16 28
+		L9 24
+		C8 23.4 7.6 22.2 8.2 21.2
+		L9 19.5Z"
 		stroke={color}
 		stroke-width="2.8"
 		stroke-linecap="round"
 		stroke-linejoin="round"
 	/>
 
+	<!-- Ground line -->
 	<path d="M7 39H39" stroke={color} stroke-width="2.8" stroke-linecap="round" />
 </svg>

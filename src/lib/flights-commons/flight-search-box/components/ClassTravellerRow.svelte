@@ -95,7 +95,7 @@
 			</button>
 		</div>
 	</div>
-
+	<div class="border-t border-gray-200 mx-4" />
 	<div class="flex gap-2 flex-wrap pt-3">
 		{#each SPECIAL_FARES as fare}
 			<div class="relative">
@@ -108,9 +108,9 @@
 				{/if}
 				<button
 					class="px-3 py-1.5 rounded-full border sub-text transition-colors
-				{$flightSearchStore.specialFare === fare.name
-						? 'bg-primary text-white border-primary'
-						: 'border-gray-300 text-base-content hover:border-gray-400'}"
+					{$flightSearchStore.specialFare === fare.name
+						? 'bg-[#1ba4f7] text-white border-[#1ba4f7]'
+						: 'border-gray-300 text-base-content hover:border-[#1ba4f7] hover:text-[#1ba4f7]'}"
 					on:click={() => toggleSpecialFare(fare.name)}
 				>
 					{fare.name}
@@ -127,7 +127,7 @@
 		/>
 		<span
 			class="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center
-			peer-checked:bg-primary peer-checked:border-primary transition-colors flex-shrink-0"
+			peer-checked:bg-[#1ba4f7] peer-checked:border-[#1ba4f7] transition-colors flex-shrink-0"
 		>
 			{#if $flightSearchStore.nonStopOnly}
 				<svg width="12" height="12" viewBox="0 0 12 12" fill="none">

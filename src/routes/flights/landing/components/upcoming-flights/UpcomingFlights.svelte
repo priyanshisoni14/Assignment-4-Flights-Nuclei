@@ -6,16 +6,16 @@
 
 <div>
 	<div class="flex justify-between items-center mb-3">
-		<a href="/flights" class="flex items-center gap-1 heading-2 hover:opacity-80">
+		<a href="/flights" class="flex items-center gap-1 heading-2 text-[#1ba4f7] hover:opacity-80">
 			Upcoming Flights
-			<span class="[&>svg]:w-4 [&>svg]:h-4"><ChevronRightIcon /></span>
+			<span class="[&>svg]:w-4 [&>svg]:h-4 text-[#1ba4f7]"><ChevronRightIcon /></span>
 		</a>
-		<div class="flex items-center gap-1.5">
+		<div class="flex items-center gap-2">
 			<span
-				class="bg-red-500 text-white text-[9px] font-semibold px-1.5 py-1.5 rounded-full leading-none"
+				class="bg-[#eb3d27] text-white text-[9px] font-semibold px-1.5 py-1 rounded-full leading-none"
 				>New</span
 			>
-			<span class="sub-text font-medium">Web Check-in</span>
+			<span class="sub-text font-medium text-[#1ba4f7] cursor-pointer">Web Check-in</span>
 		</div>
 	</div>
 

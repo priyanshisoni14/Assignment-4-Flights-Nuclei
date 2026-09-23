@@ -74,15 +74,17 @@
 </script>
 
 <div class="flex flex-col h-screen bg-base-100">
-	<AppBar
-		title={appBarTitle}
-		height="80px"
-		enableZIndex
-		showBackButton
-		onBackButtonClick={handleBackClick}
-	/>
+	<div class="search-city-appbar">
+		<AppBar
+			title={appBarTitle}
+			height="80px"
+			enableZIndex
+			showBackButton
+			onBackButtonClick={handleBackClick}
+		/>
+	</div>
 
-	<div class="p-4 md:p-6 md:max-w-2xl md:mx-auto">
+	<div class="px-6 md:px-6 md:max-w-2xl md:mx-auto w-full pt-6">
 		<SearchBar
 			placeholder="Enter City/Airport Name"
 			padding="p-0"
@@ -90,20 +92,27 @@
 			debounceWaitTime={300}
 			minCharacterRequiredForSearch={2}
 			onSearchChange={handleSearchChange}
+			textStyle="font-size: 1rem; color: #101010;"
 		/>
 	</div>
 
-	<div class="flex-1 overflow-y-auto md:max-w-2xl md:mx-auto md:w-full">
-		<h3 class="p-4 md:px-6 heading-3">
+	<div class="flex-1 overflow-y-auto md:max-w-2xl md:mx-auto md:w-full w-full">
+		<h3 class="px-6 pt-4 pb-2 heading-3">
 			{searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
 		</h3>
 		{#if isSearching}
-			<p class="px-4 md:px-6 text-sm base-content-light-60">Searching...</p>
+			<p class="px-6 text-sm base-content-light-60">Searching...</p>
 		{/if}
-		<div class="divide-y divide-gray-200">
+		<div class="divide-y divide-gray-100">
 			{#each airports as airport}
 				<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
 			{/each}
 		</div>
 	</div>
 </div>
+
+<style>
+	.search-city-appbar :global(nav.bg-secondary) {
+		background-color: #032f49;
+	}
+</style>

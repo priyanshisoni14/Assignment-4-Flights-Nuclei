@@ -5,9 +5,6 @@
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 
 	// rn no specific action is required for the back button
-	const handleBack = () => {
-		NucleiLogger.logInfo('Flights', 'Back button clicked');
-	};
 	// handle the menu click rn just logs the label
 	const handleMenuClick = (label: string, close: () => void) => {
 		NucleiLogger.logInfo('Flights', `${label} clicked`);
@@ -16,7 +13,7 @@
 </script>
 
 <div class="appbar-flights">
-	<AppBar title="Flights" height="80px" enableZIndex showBackButton onBackButtonClick={handleBack}>
+	<AppBar title="Flights" height="80px" enableZIndex showBackButton={true}>
 		<div slot="action" class="flex items-center gap-2">
 			<span class="text-xs text-white whitespace-nowrap">Rewards</span>
 			<LandingWalletCta />

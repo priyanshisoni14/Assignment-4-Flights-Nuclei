@@ -41,9 +41,9 @@
 					{dayjs($flightSearchStore.returnDate).format('dddd')}
 				</p>
 			{:else}
-				<div class="flex items-center gap-1 text-primary heading-3">
+<div class="flex items-center gap-1 text-[#1ba4f7] heading-3">
 					<span>Add Return</span>
-					<AddIcon />
+					<span class="[&>svg]:fill-[#1ba4f7]"><AddIcon /></span>
 				</div>
 				<p class="sub-text base-content-light-60">and save more!</p>
 			{/if}

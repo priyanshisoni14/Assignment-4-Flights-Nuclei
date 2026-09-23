@@ -15,7 +15,7 @@
 
 <div class="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3 cursor-pointer">
 	<div
-		class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-primary flex items-center justify-center"
+		class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#e32526] flex items-center justify-center"
 	>
 		{#if airlineLogo}
 			<img
