@@ -1,3 +1,4 @@
+// writable creates a Svelte store whose value can be read and updated by different components.
 import { writable } from 'svelte/store';
 
 export interface GuestConfig {

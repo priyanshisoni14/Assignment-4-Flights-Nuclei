@@ -1,4 +1,3 @@
-<!-- src/routes/flights/flights-common/recent-search-flights/RecentSearches.svelte -->
 <script>
 	import { flights as RecentSearches } from '$flights/FlightsData.js';
 	import SearchItemCard from './components/SearchItemCard.svelte';

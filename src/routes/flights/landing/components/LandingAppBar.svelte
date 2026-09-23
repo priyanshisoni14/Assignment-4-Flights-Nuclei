@@ -1,11 +1,16 @@
 <script lang="ts">
+	import { LandingWalletCta } from '@CDNA-Technologies/svelte-vitals/cart/wallet';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import ThreeDotMenu from '@CDNA-Technologies/svelte-vitals/components/three-dot-menu';
-	import { LandingWalletCta } from '@CDNA-Technologies/svelte-vitals/cart/wallet';
+	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 
-	const handleBack = () => console.log('back clicked');
+	// rn no specific action is required for the back button
+	const handleBack = () => {
+		NucleiLogger.logInfo('Flights', 'Back button clicked');
+	};
+	// handle the menu click rn just logs the label
 	const handleMenuClick = (label: string, close: () => void) => {
-		console.log(label, 'clicked');
+		NucleiLogger.logInfo('Flights', `${label} clicked`);
 		close();
 	};
 </script>
@@ -17,13 +22,32 @@
 			<LandingWalletCta />
 			<div class="dropdown dropdown-end">
 				<ThreeDotMenu let:closeDropDown colour="#FFFFFF">
-					<li on:click={() => handleMenuClick('My Bookings', closeDropDown)} class="border-t p-3">
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<li
+						on:click={() => handleMenuClick('My Bookings', closeDropDown)}
+						role="menuitem"
+						class="border-t p-3"
+					>
 						My Bookings
 					</li>
-					<li on:click={() => handleMenuClick('Web Check-In', closeDropDown)} class="border-t p-3">
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<li
+						on:click={() => handleMenuClick('Web Check-In', closeDropDown)}
+						tabindex="0"
+						role="menuitem"
+						class="border-t p-3"
+					>
 						Web Check-In
 					</li>
-					<li on:click={() => handleMenuClick('Help', closeDropDown)} class="border-t p-3">Help</li>
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<li
+						on:click={() => handleMenuClick('Help', closeDropDown)}
+						tabindex="0"
+						role="menuitem"
+						class="border-t p-3"
+					>
+						Help
+					</li>
 				</ThreeDotMenu>
 			</div>
 		</div>

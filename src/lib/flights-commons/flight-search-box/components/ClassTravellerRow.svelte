@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import ClassIcon from '$lib/flights-commons/icons/ClassIcon.svelte';
 	import DropdownIcon from '$lib/flights-commons/icons/DropdownIcon.svelte';
@@ -9,25 +8,39 @@
 		closeBottomSheet,
 		openBottomSheet
 	} from '@CDNA-Technologies/svelte-vitals/components/bottom-sheet';
+	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
 	import { onMount } from 'svelte';
 	import ClassTravellerBottomSheet from './ClassTravellerBottomSheet.svelte';
 
-	const SPECIAL_FARES = ['Student', 'Senior Citizen', 'Armed Forces'];
+	const SPECIAL_FARES = [
+		{ name: 'Student', badge: 'New' },
+		{ name: 'Senior Citizen' },
+		{ name: 'Armed Forces' }
+	];
+	// for cdna to know which sheet to open
 	const TRAVELLER_SHEET_ID = 'traveller-class-selector';
 
-	// The bottom-sheet library reopens itself on mount if ?view= is still in the
-	// URL (or lingering in its in-memory store) from a previous session — strip
-	// just our sheet's id so it never auto-opens on a fresh load/refresh.
+	// The bottom-sheet library persists its open state via ?view=<modelId> in the
+	// URL (confirmed in BottomSheet's own docs).
+	// Strip our sheet's id on mount so a hard refresh never auto-reopens it.
 	onMount(() => {
 		const url = new URL(location.href);
+		if (!url.searchParams.getAll('view').includes(TRAVELLER_SHEET_ID)) return;
+
 		const remainingViews = url.searchParams.getAll('view').filter((v) => v !== TRAVELLER_SHEET_ID);
-		if (remainingViews.length !== url.searchParams.getAll('view').length) {
-			url.searchParams.delete('view');
-			remainingViews.forEach((v) => url.searchParams.append('view', v));
-			goto(url, { replaceState: true, noScroll: true, keepFocus: true });
-		}
+		//Remove all view values
+		url.searchParams.delete('view');
+		//Add back all values except traveller-class-selector
+		remainingViews.forEach((v) => url.searchParams.append('view', v));
+		NavigatorUtils.navigateTo({
+			url: url.toString(),
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
 	});
 
+	//$: is a Svelte 3 reactive statement. ($state)
 	$: totalTravellers =
 		$flightSearchStore.adults + $flightSearchStore.children + $flightSearchStore.infants;
 
@@ -88,21 +101,21 @@
 		<div class="flex gap-2 flex-wrap pt-2">
 			{#each SPECIAL_FARES as fare}
 				<div class="relative">
-					{#if fare === 'Student'}
+					{#if fare.badge}
 						<span
 							class="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 bg-red-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap"
 						>
-							New
+							{fare.badge}
 						</span>
 					{/if}
 					<button
 						class="px-3 py-1.5 rounded-full border sub-text transition-colors
-						{$flightSearchStore.specialFare === fare
+						{$flightSearchStore.specialFare === fare.name
 							? 'bg-primary text-white border-primary'
 							: 'border-gray-300 text-base-content hover:border-gray-400'}"
-						on:click={() => toggleSpecialFare(fare)}
+						on:click={() => toggleSpecialFare(fare.name)}
 					>
-						{fare}
+						{fare.name}
 					</button>
 				</div>
 			{/each}

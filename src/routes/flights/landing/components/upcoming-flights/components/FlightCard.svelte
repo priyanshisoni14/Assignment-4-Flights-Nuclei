@@ -2,6 +2,7 @@
 	import ArrowRightIcon from '$lib/flights-commons/icons/ArrowRightIcon.svelte';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 
+	// creating props
 	export let airlineLogo = '';
 	export let airlineName = '';
 	export let from = '';

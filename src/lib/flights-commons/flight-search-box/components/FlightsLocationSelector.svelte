@@ -14,7 +14,9 @@
 		NavigatorUtils.navigateTo({
 			url: `${base}/flights/search-city?type=destination&title=Search Destination City`
 		});
-
+	// spread the current state so existing state remains same
+	// and update the source and destination
+	// current represents the current flight search state
 	const handleSwapButtonClick = () => {
 		flightSearchStore.update((current) => ({
 			...current,

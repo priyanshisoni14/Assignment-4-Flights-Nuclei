@@ -2,17 +2,18 @@
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import AddIcon from '$lib/flights-commons/icons/AddIcon.svelte';
 	import CalendarIcon from '$lib/flights-commons/icons/CalendarIcon.svelte';
+	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import dayjs from 'dayjs';
 
 	const handleDepartureClick = () => {
-		console.log('Departure date clicked');
+		NucleiLogger.logInfo('Flights', 'Departure date clicked');
 	};
 
 	const handleReturnClick = () => {
 		if (!$flightSearchStore.isRoundTrip) {
 			flightSearchStore.update((s) => ({ ...s, isRoundTrip: true }));
 		}
-		console.log('Return date clicked');
+		NucleiLogger.logInfo('Flights', 'Return date clicked');
 	};
 </script>
 

@@ -3,10 +3,10 @@
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
+	import Button from '../../components/Button.svelte';
 	import ClassTravellerRow from './components/ClassTravellerRow.svelte';
 	import FlightsDateSelector from './components/FlightsDateSelector.svelte';
 	import FlightsLocationSelector from './components/FlightsLocationSelector.svelte';
-
 	const handleSearch = () => {
 		NucleiLogger.logInfo('Flights', 'Search Flights clicked', $flightSearchStore);
 		NavigatorUtils.navigateTo({ url: `${base}/flights/listing` });
@@ -26,10 +26,5 @@
 		<ClassTravellerRow />
 	</div>
 
-	<button
-		class="w-full h-14 bg-primary hover:bg-primary-focus active:scale-[0.99] text-white heading-2 rounded-xl transition-all duration-150"
-		on:click={handleSearch}
-	>
-		Search Flights
-	</button>
+	<Button on:click={handleSearch}>Search Flights</Button>
 </div>

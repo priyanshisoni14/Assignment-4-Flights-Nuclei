@@ -14,28 +14,27 @@
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import type { SvelteComponentTyped } from 'svelte';
 	import { onMount } from 'svelte';
-	import { hasFetchedConfig } from '../appState.js';
 	import LandingAppBar from './LandingAppBar.svelte';
 	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
 	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
 
-	const TypedLandingAppBar = LandingAppBar as unknown as typeof SvelteComponentTyped;
 	const TypedPrimaryLoader = PrimaryLoader as unknown as typeof SvelteComponentTyped;
 	const TypedErrorHandling = ErrorHandling as unknown as typeof SvelteComponentTyped;
-
+	let hasFetchedConfig = false;
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
 		setLoadingLce();
 		await fetchScreenData();
 	});
-
+	// when API fails
 	function handleRetry() {
 		setLoadingLce();
 		fetchScreenData();
 	}
-
+	// fetch the backend config and update the store
 	const fetchScreenData = async () => {
-		if ($hasFetchedConfig) {
+		// if the config has already been fetched
+		if (hasFetchedConfig) {
 			setContentLce();
 			return;
 		}
@@ -46,7 +45,7 @@
 			setErrorLce(configResult.error);
 			return;
 		}
-
+		//
 		const searchRequest = (configResult.response as { searchRequest?: any } | undefined)
 			?.searchRequest;
 		if (searchRequest) {
@@ -56,10 +55,12 @@
 				configMap: searchRequest.configMap ?? {},
 				vendorDetails: searchRequest.vendorDetails ?? []
 			});
+			// find the matched traveller class
 			const matchedClass = searchRequest.travellers?.find(
 				(t: any) =>
 					t.value.replace(' Class', '').toLowerCase() === searchRequest.travellerClass.toLowerCase()
 			);
+			// taking existing state and updating it with the new values
 			flightSearchStore.update((s) => ({
 				...s,
 				source: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
@@ -78,13 +79,13 @@
 			}));
 		}
 
-		hasFetchedConfig.set(true);
+		hasFetchedConfig = true;
 		setContentLce();
 	};
 </script>
 
 <div class="h-screen flex flex-col bg-base-100">
-	<svelte:component this={TypedLandingAppBar} />
+	<LandingAppBar />
 
 	{#if $lceStore.isLoading}
 		<div class="h-screen flex flex-col justify-center">
