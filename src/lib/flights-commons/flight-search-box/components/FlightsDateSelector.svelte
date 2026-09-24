@@ -3,6 +3,7 @@
 	import AddIcon from '$lib/flights-commons/icons/AddIcon.svelte';
 	import CalendarIcon from '$lib/flights-commons/icons/CalendarIcon.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import Calendar from '@CDNA-Technologies/svelte-vitals/calendar';
 	import dayjs from 'dayjs';
 
 	const handleDepartureClick = () => {
@@ -41,7 +42,7 @@
 					{dayjs($flightSearchStore.returnDate).format('dddd')}
 				</p>
 			{:else}
-<div class="flex items-center gap-1 text-[#1ba4f7] heading-3">
+				<div class="flex items-center gap-1 text-[#1ba4f7] heading-3">
 					<span>Add Return</span>
 					<span class="[&>svg]:fill-[#1ba4f7]"><AddIcon /></span>
 				</div>

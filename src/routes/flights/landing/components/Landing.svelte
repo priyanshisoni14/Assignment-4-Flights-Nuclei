@@ -12,15 +12,12 @@
 		setLoadingLce
 	} from '@CDNA-Technologies/svelte-vitals/error-handling';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import type { SvelteComponentTyped } from 'svelte';
 	import { onMount } from 'svelte';
 	import LandingAppBar from './LandingAppBar.svelte';
 	import PromoBanner from './PromoBanner.svelte';
 	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
 	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
 
-	const TypedPrimaryLoader = PrimaryLoader as unknown as typeof SvelteComponentTyped;
-	const TypedErrorHandling = ErrorHandling as unknown as typeof SvelteComponentTyped;
 	// when the landing screen is mounted
 	let hasFetchedConfig = false;
 	onMount(async () => {
@@ -28,6 +25,7 @@
 		setLoadingLce();
 		// fetch the backend config and update the store
 		await fetchScreenData();
+		applySavedSelectionFromSessionStorage();
 	});
 	// when API fails
 	function handleRetry() {
@@ -96,6 +94,33 @@
 		hasFetchedConfig = true;
 		setContentLce();
 	};
+
+	// consumes the saved selection from session storage and cleans it up to prevent stale data
+	function consumeSavedSelection(key: string): { locationName: string; iataCode: string } | null {
+		const raw = sessionStorage.getItem(key);
+		if (!raw) return null;
+		sessionStorage.removeItem(key);
+		try {
+			return JSON.parse(raw);
+		} catch (err) {
+			NucleiLogger.logWarn('Landing', 'Failed to parse saved selection from session storage');
+			return null;
+		}
+	}
+	// checking if there is a saved selection sitting in session storage
+	// and updating the store in case of a hard refresh
+	function applySavedSelectionFromSessionStorage() {
+		const savedSource = consumeSavedSelection('flights_selected_source');
+		const savedDestination = consumeSavedSelection('flights_selected_destination');
+
+		if (savedSource || savedDestination) {
+			flightSearchStore.update((s) => ({
+				...s,
+				source: savedSource ?? s.source,
+				destination: savedDestination ?? s.destination
+			}));
+		}
+	}
 </script>
 
 <div class="h-screen flex flex-col bg-base-100">
@@ -103,14 +128,10 @@
 
 	{#if $lceStore.isLoading}
 		<div class="h-screen flex flex-col justify-center">
-			<svelte:component this={TypedPrimaryLoader} />
+			<PrimaryLoader />
 		</div>
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
-		<svelte:component
-			this={TypedErrorHandling}
-			errorHandling={$lceStore.errorDetails}
-			on:submit={handleRetry}
-		/>
+		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 	{:else if $lceStore.hasContent}
 		<div class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
 			<div class="w-full px-6 pt-4 space-y-6 md:max-w-2xl md:mx-auto">
