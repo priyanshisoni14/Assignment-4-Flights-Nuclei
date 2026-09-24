@@ -3,7 +3,6 @@
 	import AddIcon from '$lib/flights-commons/icons/AddIcon.svelte';
 	import CalendarIcon from '$lib/flights-commons/icons/CalendarIcon.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import Calendar from '@CDNA-Technologies/svelte-vitals/calendar';
 	import dayjs from 'dayjs';
 
 	const handleDepartureClick = () => {

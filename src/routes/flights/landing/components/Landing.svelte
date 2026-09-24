@@ -54,7 +54,8 @@
 				guests: searchRequest.guests ?? [],
 				travellers: searchRequest.travellers ?? [],
 				configMap: searchRequest.configMap ?? {},
-				vendorDetails: searchRequest.vendorDetails ?? []
+				vendorDetails: searchRequest.vendorDetails ?? [],
+				partnerCountry: searchRequest.partnerCountry ?? 'IN'
 			});
 			// find the matched traveller class
 			const matchedClass = searchRequest.travellers?.find(

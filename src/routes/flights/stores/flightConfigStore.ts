@@ -28,11 +28,13 @@ export interface FlightConfigState {
 	travellers: TravellerClassOption[];
 	configMap: Record<string, string>;
 	vendorDetails: VendorDetail[];
+	partnerCountry: string;
 }
 
 export const flightConfigStore = writable<FlightConfigState>({
 	guests: [],
 	travellers: [],
 	configMap: {},
-	vendorDetails: []
+	vendorDetails: [],
+	partnerCountry: "",
 });
