@@ -60,7 +60,7 @@
 	<!-- RETURN: other equal half -->
 	<button
 		type="button"
-		class="min-w-0 flex-1 text-left ml-8"
+		class="min-w-0 flex-1 text-left ml-1"
 		aria-label={returnLabel}
 		on:click={handleReturnClick}
 	>

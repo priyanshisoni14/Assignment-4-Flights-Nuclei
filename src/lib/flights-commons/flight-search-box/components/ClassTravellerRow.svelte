@@ -60,38 +60,35 @@
 	}
 </script>
 
-<div class="flex flex-col space-y-4 rounded-xl bg-white px-4 py-3.5">
-	<div class="flex items-center gap-3">
-		<span
-			class="w-7 flex-shrink-0 text-gray-500 opacity-60 [&>svg]:h-7 [&>svg]:w-7"
-			aria-hidden="true"
-		>
-			<ClassIcon />
-		</span>
-
-		<div class="flex flex-1 items-center">
+<div class="flex w-[366px] flex-col space-y-4 rounded-xl bg-white px-4 py-3.5">
+	<div class="flex items-stretch">
 			<button
 				type="button"
-				class="flex-1 text-left"
+				class="flex min-w-0 flex-1 items-center gap-3 text-left"
 				aria-label={`Class, ${$flightSearchStore.travelClass}. Double tap to change.`}
 				on:click={handleOpenSelector}
 			>
-				<p class="mb-1 text-sm leading-5 text-gray-500" aria-hidden="true">Class</p>
-				<div class="flex items-center justify-between" aria-hidden="true">
-					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
-						{$flightSearchStore.travelClass.toLowerCase()}
-					</p>
-					<span class="opacity-40 [&>svg]:h-1.5 [&>svg]:w-2.5">
+				<span class="flex-shrink-0 text-gray-500 opacity-60 [&>svg]:h-7 [&>svg]:w-7" aria-hidden="true">
+					<ClassIcon />
+				</span>
+				<span class="min-w-0" aria-hidden="true">
+					<p class="mb-1 text-sm leading-5 text-gray-500">Class</p>
+					<div class="flex items-center justify-between gap-2">
+						<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
+							{$flightSearchStore.travelClass.toLowerCase()}
+						</p>
+<span class="flex-shrink-0 opacity-70 [&>svg]:h-2 [&>svg]:w-3.5">
 						<DropdownIcon />
 					</span>
-				</div>
+					</div>
+				</span>
 			</button>
 
 			<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
 
 			<button
 				type="button"
-				class="flex-1 text-left"
+				class="min-w-0 flex-1 text-left"
 				aria-label={`Traveller(s), ${totalTravellers}. Double tap to change.`}
 				on:click={handleOpenSelector}
 			>
@@ -102,28 +99,27 @@
 					<span class="opacity-70 [&>svg]:h-5 [&>svg]:w-5"><TravellerIcon /></span>
 					<span>Traveller(s)</span>
 				</div>
-				<div class="flex items-center justify-between" aria-hidden="true">
+				<div class="flex items-center gap-2" aria-hidden="true">
 					<p class="text-lg font-semibold leading-6 text-black">
 						{String(totalTravellers).padStart(2, '0')}
 					</p>
-					<span class="opacity-40 [&>svg]:h-1.5 [&>svg]:w-2.5">
+					<span class="opacity-70 [&>svg]:h-2 [&>svg]:w-3.5">
 						<DropdownIcon />
 					</span>
 				</div>
 			</button>
 		</div>
-	</div>
 
-	<div class="border-t border-gray-200" />
+	<div class="mx-[-1rem] border-t border-gray-200" />
 
 	<fieldset class="flex flex-col gap-3">
 		<legend class="text-sm leading-5 text-gray-500">Special Fares (Optional)</legend>
-		<div class="flex flex-wrap gap-3 pt-3">
+		<div class="flex justify-evenly pt-3">
 			{#each SPECIAL_FARES as fare}
 				<div class="relative">
 					{#if fare.badge}
 						<span
-							class="absolute -top-2 left-2 z-10 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
+							class="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
 							aria-hidden="true"
 						>
 							{fare.badge}
@@ -131,7 +127,7 @@
 					{/if}
 					<button
 						type="button"
-						class="rounded-full border px-4 py-2 text-base transition-colors
+						class="rounded-full border px-3 py-2 text-sm transition-colors
 					{$flightSearchStore.specialFare === fare.name
 							? 'border-primary bg-primary text-white'
 							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"
