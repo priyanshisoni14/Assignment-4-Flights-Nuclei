@@ -23,17 +23,12 @@
 	<div
 		class="relative w-[366px] max-w-full h-[141px] overflow-hidden rounded-2xl border-4 border-white bg-cover bg-center shadow-sm"
 		style={`background-image: url(${bannerImageUrl});`}
-		role="img"
-		aria-label="Promotional banner: Book your flight with ease using code FLYHIGH10, in partnership with cleartrip"
 	>
 		<div class="flex h-full items-center justify-between gap-4 px-5">
 			<!-- left side stays empty / transparent so the plane photo shows through -->
 			<div class="flex-1" aria-hidden="true" />
 
-			<div
-				class="flex w-1/2 flex-shrink-0 flex-col items-end gap-1.5 text-right"
-				aria-hidden="true"
-			>
+			<div class="flex w-1/2 flex-shrink-0 flex-col items-end gap-1.5 text-right">
 				<span
 					class="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#E2703F] shadow-sm"
 				>
@@ -61,6 +56,7 @@
 				<button
 					type="button"
 					class="rounded-lg bg-[#E2803F] px-5 py-1.5 text-sm font-semibold text-white"
+					aria-label="Explore offers"
 					on:click={handleExploreClick}
 				>
 					Explore

@@ -30,13 +30,15 @@
 <div class="relative flex flex-col gap-2">
 	<!-- FROM -->
 	<button
-		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		type="button"
+		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left mb-1"
+		aria-label={`Departure, ${$flightSearchStore.source.locationName}, ${$flightSearchStore.source.iataCode}. Double tap to change.`}
 		on:click={handleSourceClick}
 	>
-		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6">
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6" aria-hidden="true">
 			<FlightIcon />
 		</div>
-		<div class="min-w-0 flex-1">
+		<div class="min-w-0 flex-1" aria-hidden="true">
 			<p class="text-sm leading-5 text-gray-500">From</p>
 			<div class="flex items-center gap-2">
 				<span class="truncate text-lg font-semibold leading-6 text-black">
@@ -56,13 +58,15 @@
 
 	<!-- TO -->
 	<button
+		type="button"
 		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		aria-label={`Destination, ${$flightSearchStore.destination.locationName}, ${$flightSearchStore.destination.iataCode}. Double tap to change.`}
 		on:click={handleDestinationClick}
 	>
-		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6">
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6" aria-hidden="true">
 			<FlightToIcon />
 		</div>
-		<div class="min-w-0 flex-1">
+		<div class="min-w-0 flex-1" aria-hidden="true">
 			<p class="text-sm leading-5 text-gray-500">To</p>
 			<div class="flex items-center gap-2">
 				<span class="truncate text-lg font-semibold leading-6 text-black">
@@ -82,10 +86,11 @@
 
 	<!-- SWAP -->
 	<button
+		type="button"
 		class="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#4da3f0] bg-white text-[#4da3f0] transition-transform active:scale-95"
+		aria-label="Swap departure and destination"
 		on:click={handleSwapButtonClick}
-		aria-label="Swap source and destination"
 	>
-		<SwapIcon />
+		<span aria-hidden="true"><SwapIcon /></span>
 	</button>
 </div>

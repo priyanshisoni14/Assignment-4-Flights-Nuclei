@@ -79,13 +79,14 @@
 			<div class="dropdown dropdown-end">
 				<ThreeDotMenu let:closeDropDown colour="#FFFFFF">
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
-					<li
-						on:click={() => handleMenuClick('My Bookings', closeDropDown)}
-						role="menuitem"
-						class="border-t p-3"
-					>
-						My Bookings
-					</li>
+<li
+					on:click={() => handleMenuClick('My Bookings', closeDropDown)}
+					role="menuitem"
+					tabindex="0"
+					class="border-t p-3"
+				>
+					My Bookings
+				</li>
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<li
 						on:click={() => handleMenuClick('Web Check-In', closeDropDown)}

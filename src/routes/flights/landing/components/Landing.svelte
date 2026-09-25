@@ -145,21 +145,29 @@
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
 		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 	{:else if $lceStore.hasContent}
-		<div class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
+		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
 			<div class="w-full px-6 pt-4 space-y-6 md:max-w-2xl md:mx-auto">
 				<div class="flex items-center gap-1.5">
 					<p class="sub-text text-[#676767] flex items-center gap-2">
 						Compare and fly:
-						<span class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto"><ClearTripIcon /></span>
-						<span class="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-auto"><EaseMyTripIcon /></span>
+						<span
+							class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto"
+							aria-hidden="true"
+							><ClearTripIcon /></span
+						>
+						<span
+							class="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-auto"
+							aria-hidden="true"
+							><EaseMyTripIcon /></span
+						>
 					</p>
 				</div>
 
-				<FlightSearchBox />
-				<PromoBanner />
-				<UpcomingFlights />
-				<RecentSearches />
+<FlightSearchBox />
+			<PromoBanner />
+			<UpcomingFlights />
+			<RecentSearches />
 			</div>
-		</div>
+		</main>
 	{/if}
 </div>

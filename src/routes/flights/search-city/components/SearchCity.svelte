@@ -95,15 +95,18 @@
 	</div>
 
 	<div class="px-6 md:px-6 md:max-w-2xl md:mx-auto w-full pt-6">
-		<SearchBar
-			placeholder="Enter City/Airport Name"
-			padding="p-0"
-			bind:searchText
-			debounceWaitTime={300}
-			minCharacterRequiredForSearch={2}
-			onSearchChange={handleSearchChange}
-			textStyle="font-size: 1rem; color: #101010;"
-		/>
+		<label class="block">
+			<span class="sr-only">Search for a city or airport</span>
+			<SearchBar
+				placeholder="Enter City/Airport Name"
+				padding="p-0"
+				bind:searchText
+				debounceWaitTime={300}
+				minCharacterRequiredForSearch={2}
+				onSearchChange={handleSearchChange}
+				textStyle="font-size: 1rem; color: #101010;"
+			/>
+		</label>
 	</div>
 
 	<div class="flex-1 overflow-y-auto md:max-w-2xl md:mx-auto md:w-full w-full">
@@ -111,11 +114,19 @@
 			{searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
 		</h3>
 		{#if isSearching}
-			<p class="px-6 text-sm base-content-light-60">Searching...</p>
+			<p class="px-6 text-sm base-content-light-60" role="status" aria-live="polite">
+				Searching...
+			</p>
 		{/if}
-		<div class="divide-y divide-gray-100">
+		<div
+			class="divide-y divide-gray-100"
+			role="list"
+			aria-label={searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
+		>
 			{#each airports as airport}
-				<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+				<div role="listitem">
+					<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+				</div>
 			{/each}
 		</div>
 	</div>

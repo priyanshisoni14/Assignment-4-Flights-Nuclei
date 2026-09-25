@@ -80,20 +80,28 @@
 
 					<div class="flex items-center gap-3">
 						<button
+							type="button"
 							on:click={() => bump(guest.guestType, -1)}
 							class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center text-lg leading-none text-gray-600 disabled:opacity-30"
+							aria-label={`Decrease ${guest.textName}, ${guest.subTextName}, to ${values[guestTypeToField[guest.guestType]] - 1}`}
 							disabled={config && values[guestTypeToField[guest.guestType]] <= config.minValue}
 						>
 							−
 						</button>
 
-						<span class="font-semibold w-4 text-center">
+						<span
+							class="font-semibold w-4 text-center"
+							aria-live="polite"
+							aria-atomic="true"
+						>
 							{values[guestTypeToField[guest.guestType]]}
 						</span>
 
 						<button
+							type="button"
 							on:click={() => bump(guest.guestType, 1)}
 							class="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center text-lg leading-none text-gray-600 disabled:opacity-30"
+							aria-label={`Increase ${guest.textName}, ${guest.subTextName}, to ${values[guestTypeToField[guest.guestType]] + 1}`}
 							disabled={config && values[guestTypeToField[guest.guestType]] >= config.maxValue}
 						>
 							+
@@ -121,9 +129,10 @@
 					<span
 						class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
 							{travelClass === option.key ? 'border-primary' : 'border-gray-300'}"
+						aria-hidden="true"
 					>
 						{#if travelClass === option.key}
-							<span class="w-2.5 h-2.5 rounded-full bg-primary" />
+							<span class="w-2.5 h-2.5 rounded-full bg-primary" aria-hidden="true" />
 						{/if}
 					</span>
 
