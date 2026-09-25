@@ -17,7 +17,8 @@ const config = {
 		}
 	},
 	optimizeDeps: {
-		exclude: ['@CDNA-Technologies/svelte-vitals']
+		exclude: ['@CDNA-Technologies/svelte-vitals'],
+		include: ['lodash/debounce']
 	},
 	server: {
 		fs: {
