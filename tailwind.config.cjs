@@ -6,6 +6,10 @@ module.exports = {
 		'./node_modules/@CDNA-Technologies/svelte-vitals/**/*.{html,js,svelte,ts}'
 	],
 	theme: {
-		extend: {}
+		extend: {
+			fontWeight: {
+				bold: '500'
+			}
+		}
 	}
 };

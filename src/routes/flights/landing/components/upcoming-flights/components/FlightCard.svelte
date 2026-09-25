@@ -13,44 +13,43 @@
 	export let duration = '';
 </script>
 
-<div class="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3 cursor-pointer">
+<button
+	type="button"
+	class="flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left"
+	aria-label={`${from} to ${to}, ${dateRange}, ${travellers} traveller${
+		travellers > 1 ? 's' : ''
+	}, ${travelClass}, ${duration}. Double tap for details.`}
+>
 	<div
-		class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#e32526] flex items-center justify-center"
+		class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#e32526]"
+		aria-hidden="true"
 	>
 		{#if airlineLogo}
-			<img
-				class="w-full h-full object-cover"
-				src={airlineLogo}
-				alt={airlineName || 'Airline logo'}
-			/>
+			<img class="h-full w-full object-cover" src={airlineLogo} alt="" />
 		{:else}
-			<span class="text-xs font-bold text-primary-content"
-				>{airlineName.slice(0, 2).toUpperCase()}</span
-			>
+			<span class="px-1 text-center font-serif text-sm italic text-white">{airlineName}</span>
 		{/if}
 	</div>
 
-	<div class="flex-1 min-w-0">
-		<div class="flex items-center gap-1.5 min-w-0">
-			<p class="card-heading flex-shrink-0 truncate">{from}</p>
-			<span class="flex-shrink-0"><ArrowRightIcon /></span>
-			<p class="card-heading truncate">{to}</p>
+	<div class="min-w-0 flex-1" aria-hidden="true">
+		<div class="flex min-w-0 items-center gap-2">
+			<p class="flex-shrink-0 truncate text-xl font-bold text-black">{from}</p>
+			<span class="flex-shrink-0 text-black [&>svg]:h-4 [&>svg]:w-4"><ArrowRightIcon /></span>
+			<p class="truncate text-xl font-bold text-black">{to}</p>
 		</div>
 
-		<p class="sub-text base-content-light-60 mt-0.5 truncate">{dateRange}</p>
+		<p class="mt-0.5 truncate text-base text-gray-500">{dateRange}</p>
 
-		<div
-			class="mt-1 flex items-center gap-1.5 text-sm text-base-content whitespace-nowrap overflow-hidden"
-		>
+		<div class="mt-1 flex items-center gap-1.5 whitespace-nowrap text-base text-black">
 			<span>{travellers} Traveller{travellers > 1 ? 's' : ''}</span>
-			<span class="text-base-300">|</span>
+			<span class="text-gray-300">|</span>
 			<span>{travelClass}</span>
-			<span class="text-base-300">|</span>
+			<span class="text-gray-300">|</span>
 			<span>{duration}</span>
 		</div>
 	</div>
 
-	<div class="flex-shrink-0 opacity-50">
+	<div class="flex-shrink-0 text-black [&>svg]:h-5 [&>svg]:w-5" aria-hidden="true">
 		<ChevronRightIcon />
 	</div>
-</div>
+</button>

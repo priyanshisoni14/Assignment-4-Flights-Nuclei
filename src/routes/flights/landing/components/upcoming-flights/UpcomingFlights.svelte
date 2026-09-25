@@ -5,23 +5,31 @@
 </script>
 
 <div>
-	<div class="flex justify-between items-center mb-3">
-		<a href="/flights" class="flex items-center gap-1 heading-2 text-[#1ba4f7] hover:opacity-80">
+	<div class="mb-3 flex items-center justify-between">
+		<a
+			href="/flights"
+			class="flex items-center gap-1 text-xl font-semibold text-[#4EA1F1] hover:opacity-80"
+		>
 			Upcoming Flights
-			<span class="[&>svg]:w-4 [&>svg]:h-4 text-[#1ba4f7]"><ChevronRightIcon /></span>
+			<span class="[&>svg]:h-4 [&>svg]:w-4" aria-hidden="true"><ChevronRightIcon /></span>
 		</a>
 		<div class="flex items-center gap-2">
 			<span
-				class="bg-[#eb3d27] text-white text-[9px] font-semibold px-1.5 py-1 rounded-full leading-none"
-				>New</span
+				class="rounded-full bg-[#D94C36] px-2.5 py-1 text-xs font-semibold leading-none text-white"
 			>
-			<span class="sub-text font-medium text-[#1ba4f7] cursor-pointer">Web Check-in</span>
+				new
+			</span>
+			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]">Web Check-in</a>
 		</div>
 	</div>
 
-	<div class="flex space-x-3 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+	<div
+		class="scrollbar-hide flex snap-x snap-mandatory space-x-3 overflow-x-auto pb-1"
+		role="list"
+		aria-label="Upcoming flights"
+	>
 		{#each flights as flight}
-			<div class="flex-shrink-0 w-[90%] snap-start">
+			<div class="w-[90%] flex-shrink-0 snap-start" role="listitem">
 				<FlightCard {...flight} />
 			</div>
 		{/each}

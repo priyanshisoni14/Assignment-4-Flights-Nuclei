@@ -60,91 +60,117 @@
 	}
 </script>
 
-<div class="flex flex-col px-4 py-3.5 space-y-4">
+<div class="flex flex-col space-y-4 rounded-xl bg-white px-4 py-3.5">
 	<div class="flex items-center gap-3">
-		<div class="w-6 flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5">
+		<span
+			class="w-7 flex-shrink-0 text-gray-500 opacity-60 [&>svg]:h-7 [&>svg]:w-7"
+			aria-hidden="true"
+		>
 			<ClassIcon />
-		</div>
+		</span>
 
-		<div class="flex-1 flex items-center">
-			<button class="flex-1 text-left" on:click={handleOpenSelector}>
-				<p class="sub-text base-content-light-60 mb-1">Class</p>
-				<div class="flex items-center justify-between">
-					<p class="heading-3 truncate capitalize">
+		<div class="flex flex-1 items-center">
+			<button
+				type="button"
+				class="flex-1 text-left"
+				aria-label={`Class, ${$flightSearchStore.travelClass}. Double tap to change.`}
+				on:click={handleOpenSelector}
+			>
+				<p class="mb-1 text-sm leading-5 text-gray-500" aria-hidden="true">Class</p>
+				<div class="flex items-center justify-between" aria-hidden="true">
+					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
 						{$flightSearchStore.travelClass.toLowerCase()}
 					</p>
-					<span class="[&>svg]:w-2.5 [&>svg]:h-1.5 opacity-40">
+					<span class="opacity-40 [&>svg]:h-1.5 [&>svg]:w-2.5">
 						<DropdownIcon />
 					</span>
 				</div>
 			</button>
 
-			<div class="w-px self-stretch bg-gray-200 mx-3" />
+			<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
 
-			<button class="flex-1 text-left" on:click={handleOpenSelector}>
-				<div class="flex items-center gap-1 sub-text base-content-light-60 mb-1">
-					<span class="opacity-70 [&>svg]:w-5 [&>svg]:h-5"><TravellerIcon /></span>
+			<button
+				type="button"
+				class="flex-1 text-left"
+				aria-label={`Traveller(s), ${totalTravellers}. Double tap to change.`}
+				on:click={handleOpenSelector}
+			>
+				<div
+					class="mb-1 flex items-center gap-1 text-sm leading-5 text-gray-500"
+					aria-hidden="true"
+				>
+					<span class="opacity-70 [&>svg]:h-5 [&>svg]:w-5"><TravellerIcon /></span>
 					<span>Traveller(s)</span>
 				</div>
-				<div class="flex items-center justify-between">
-					<p class="heading-3">{String(totalTravellers).padStart(2, '0')}</p>
-					<span class="[&>svg]:w-2.5 [&>svg]:h-1.5 opacity-40">
+				<div class="flex items-center justify-between" aria-hidden="true">
+					<p class="text-lg font-semibold leading-6 text-black">
+						{String(totalTravellers).padStart(2, '0')}
+					</p>
+					<span class="opacity-40 [&>svg]:h-1.5 [&>svg]:w-2.5">
 						<DropdownIcon />
 					</span>
 				</div>
 			</button>
 		</div>
 	</div>
-	<div class="border-t border-gray-200 mx-4" />
-	<div class="flex gap-2 flex-wrap pt-3">
-		{#each SPECIAL_FARES as fare}
-			<div class="relative">
-				{#if fare.badge}
-					<span
-						class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-red-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap"
-					>
-						{fare.badge}
-					</span>
-				{/if}
-				<button
-					class="px-3 py-1.5 rounded-full border sub-text transition-colors
+
+	<div class="border-t border-gray-200" />
+
+	<fieldset class="flex flex-col gap-3">
+		<legend class="text-sm leading-5 text-gray-500">Special Fares (Optional)</legend>
+		<div class="flex flex-wrap gap-3 pt-3">
+			{#each SPECIAL_FARES as fare}
+				<div class="relative">
+					{#if fare.badge}
+						<span
+							class="absolute -top-2 left-2 z-10 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
+							aria-hidden="true"
+						>
+							{fare.badge}
+						</span>
+					{/if}
+					<button
+						type="button"
+						class="rounded-full border px-4 py-2 text-base transition-colors
 					{$flightSearchStore.specialFare === fare.name
-						? 'bg-[#1ba4f7] text-white border-[#1ba4f7]'
-						: 'border-gray-300 text-base-content hover:border-[#1ba4f7] hover:text-[#1ba4f7]'}"
-					on:click={() => toggleSpecialFare(fare.name)}
-				>
-					{fare.name}
-				</button>
-			</div>
-		{/each}
-	</div>
-
-	<label class="relative flex items-center gap-2 cursor-pointer w-fit">
-		<input
-			type="checkbox"
-			bind:checked={$flightSearchStore.nonStopOnly}
-			class="peer absolute opacity-0 w-0 h-0"
-		/>
-		<span
-			class="w-5 h-5 rounded border-2 border-gray-300 flex items-center justify-center
-			peer-checked:bg-[#1ba4f7] peer-checked:border-[#1ba4f7] transition-colors flex-shrink-0"
-		>
-			{#if $flightSearchStore.nonStopOnly}
-				<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-					<path
-						d="M2 6L4.5 8.5L10 3"
-						stroke="white"
-						stroke-width="1.75"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			{/if}
-		</span>
-		<span class="sub-text base-content-light-60">Show only non-stop flights</span>
-	</label>
+							? 'border-primary bg-primary text-white'
+							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"
+						aria-pressed={$flightSearchStore.specialFare === fare.name}
+						on:click={() => toggleSpecialFare(fare.name)}
+					>
+						{fare.name}
+						{#if fare.badge}<span class="sr-only">, new</span>{/if}
+					</button>
+				</div>
+			{/each}
+		</div>
+	</fieldset>
 </div>
-
+<label class="relative flex w-fit cursor-pointer items-center gap-2 mt-2">
+	<input
+		type="checkbox"
+		bind:checked={$flightSearchStore.nonStopOnly}
+		class="peer h-5 w-5 flex-shrink-0 cursor-pointer appearance-none rounded border-2 border-gray-300 checked:border-primary checked:bg-primary"
+	/>
+	<svg
+		class="pointer-events-none absolute left-0 top-0 hidden h-5 w-5 peer-checked:block"
+		width="12"
+		height="12"
+		viewBox="0 0 12 12"
+		fill="none"
+		aria-hidden="true"
+	>
+		<path
+			d="M2 6L4.5 8.5L10 3"
+			stroke="white"
+			stroke-width="1.75"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			transform="translate(6 6) scale(0.8) translate(-6 -6)"
+		/>
+	</svg>
+	<span class="text-base text-gray-500">Show only non-stop flights</span>
+</label>
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
 		<div slot="action" class="flex justify-center pt-2 pb-1" />

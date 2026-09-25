@@ -14,15 +14,15 @@
 </script>
 
 <div class="w-full space-y-4">
-	<div class="rounded-2xl divide-y overflow-hidden">
+	<div class="divide-y overflow-hidden">
 		<FlightsLocationSelector />
 	</div>
 
-	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+	<div class="overflow-hidden">
 		<FlightsDateSelector />
 	</div>
 
-	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+	<div class=" overflow-hidden">
 		<ClassTravellerRow />
 	</div>
 

@@ -3,12 +3,18 @@
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>
 
-<div class="mb-4">
-	<h2 class="heading-2">Recent Searches</h2>
-</div>
+<div>
+	<h2 class="mb-3 text-xl font-semibold text-black">Recent Searches</h2>
 
-<div class="flex flex-col space-y-2 bg-base-100 divide-y divide-gray-200">
-	{#each RecentSearches as search}
-		<SearchItemCard from={search.from} to={search.to} dateRange={search.dateRange} />
-	{/each}
+	<div
+		class="scrollbar-hide flex snap-x snap-mandatory space-x-3 overflow-x-auto pb-1"
+		role="list"
+		aria-label="Recent searches"
+	>
+		{#each RecentSearches as search}
+			<div class="w-[90%] flex-shrink-0 snap-start" role="listitem">
+				<SearchItemCard from={search.from} to={search.to} dateRange={search.dateRange} />
+			</div>
+		{/each}
+	</div>
 </div>

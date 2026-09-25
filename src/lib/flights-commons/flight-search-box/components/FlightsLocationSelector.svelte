@@ -27,45 +27,62 @@
 	};
 </script>
 
-<div class="relative">
-	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-1">
-		<button
-			class="w-full text-left px-4 py-3.5 flex items-center gap-3"
-			on:click={handleSourceClick}
-		>
-			<div class="flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5">
-				<FlightIcon />
-			</div>
-			<div class="min-w-0 flex-1">
-				<p class="sub-text base-content-light-60">From</p>
-				<p class="heading-3 truncate">
-					{$flightSearchStore.source.locationName}
-					<span class="sub-text text-gray-400">| {$flightSearchStore.source.iataCode}</span>
-				</p>
-			</div>
-		</button>
-	</div>
-
-	<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-1">
-		<button
-			class="w-full text-left px-4 py-3.5 flex items-center gap-3"
-			on:click={handleDestinationClick}
-		>
-			<div class="flex-shrink-0 opacity-60 [&>svg]:w-5 [&>svg]:h-5">
-				<FlightToIcon />
-			</div>
-			<div class="min-w-0 flex-1">
-				<p class="sub-text base-content-light-60">To</p>
-				<p class="heading-3 truncate">
-					{$flightSearchStore.destination.locationName}
-					<span class="sub-text text-gray-400">| {$flightSearchStore.destination.iataCode}</span>
-				</p>
-			</div>
-		</button>
-	</div>
-
+<div class="relative flex flex-col gap-2">
+	<!-- FROM -->
 	<button
-		class="absolute right-8 top-1/2 -translate-y-1/2 bg-white rounded-full w-9 h-9 flex items-center justify-center border-2 border-[#1ba4f7] text-[#1ba4f7] hover:bg-[#f0faff] active:scale-95 transition-transform"
+		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		on:click={handleSourceClick}
+	>
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6">
+			<FlightIcon />
+		</div>
+		<div class="min-w-0 flex-1">
+			<p class="text-sm leading-5 text-gray-500">From</p>
+			<div class="flex items-center gap-2">
+				<span class="truncate text-lg font-semibold leading-6 text-black">
+					{$flightSearchStore.source.locationName}
+				</span>
+				<span
+					class="flex-shrink-0 rounded border border-gray-400 px-2 text-xs leading-5 text-black"
+				>
+					{$flightSearchStore.source.iataCode}
+				</span>
+			</div>
+			<p class="truncate text-sm leading-5 text-gray-500">
+				{$flightSearchStore.source.airportName ?? ''}
+			</p>
+		</div>
+	</button>
+
+	<!-- TO -->
+	<button
+		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		on:click={handleDestinationClick}
+	>
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6">
+			<FlightToIcon />
+		</div>
+		<div class="min-w-0 flex-1">
+			<p class="text-sm leading-5 text-gray-500">To</p>
+			<div class="flex items-center gap-2">
+				<span class="truncate text-lg font-semibold leading-6 text-black">
+					{$flightSearchStore.destination.locationName}
+				</span>
+				<span
+					class="flex-shrink-0 rounded border border-gray-400 px-2 text-xs leading-5 text-black"
+				>
+					{$flightSearchStore.destination.iataCode}
+				</span>
+			</div>
+			<p class="truncate text-sm leading-5 text-gray-500">
+				{$flightSearchStore.destination.airportName ?? ''}
+			</p>
+		</div>
+	</button>
+
+	<!-- SWAP -->
+	<button
+		class="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#4da3f0] bg-white text-[#4da3f0] transition-transform active:scale-95"
 		on:click={handleSwapButtonClick}
 		aria-label="Swap source and destination"
 	>

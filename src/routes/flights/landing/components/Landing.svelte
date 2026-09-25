@@ -3,6 +3,8 @@
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
+	import ClearTripIcon from '$lib/flights-commons/icons/cleartrip.svelte';
+	import EaseMyTripIcon from '$lib/flights-commons/icons/easemytrip.svelte';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -74,10 +76,19 @@
 				...s,
 				source: savedSource
 					? JSON.parse(savedSource)
-					: { locationName: searchRequest.src.city, iataCode: searchRequest.src.iataCode },
+					: {
+							locationName: searchRequest.src.city,
+							iataCode: searchRequest.src.iataCode,
+							airportName: searchRequest.src.name
+					  },
+
 				destination: savedDestination
 					? JSON.parse(savedDestination)
-					: { locationName: searchRequest.des.city, iataCode: searchRequest.des.iataCode },
+					: {
+							locationName: searchRequest.des.city,
+							iataCode: searchRequest.des.iataCode,
+							airportName: searchRequest.des.name
+					  },
 				departureDate: new Date(Number(searchRequest.departDate)),
 				isRoundTrip: searchRequest.isRoundTrip,
 				returnDate:
@@ -137,10 +148,10 @@
 		<div class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
 			<div class="w-full px-6 pt-4 space-y-6 md:max-w-2xl md:mx-auto">
 				<div class="flex items-center gap-1.5">
-					<p class="sub-text text-[#676767]">
+					<p class="sub-text text-[#676767] flex items-center gap-2">
 						Compare and fly:
-						<span class="font-semibold text-[#f05325]">cleartrip</span>
-						<span class="font-semibold text-[#3c5769]">EaseMyTrip</span>
+						<span class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto"><ClearTripIcon /></span>
+						<span class="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-auto"><EaseMyTripIcon /></span>
 					</p>
 				</div>
 
