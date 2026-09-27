@@ -17,7 +17,7 @@
 		</h2>
 		<div class="flex items-center gap-2">
 			<span
-				class="rounded-full bg-[#D94C36] px-2.5 py-1 text-xs font-semibold leading-none text-white"
+				class="rounded-md bg-red-500 px-2.5 py-1 text-xs font-semibold leading-none text-white"
 				aria-hidden="true"
 			>
 				new
@@ -32,7 +32,7 @@
 		aria-label="Upcoming flights"
 	>
 		{#each flights as flight}
-			<div class="w-[90%] flex-shrink-0 snap-start" role="listitem">
+			<div class="w-[316px] flex-shrink-0 snap-start" role="listitem">
 				<FlightCard {...flight} />
 			</div>
 		{/each}

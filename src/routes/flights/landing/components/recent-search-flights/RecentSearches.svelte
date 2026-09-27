@@ -12,7 +12,7 @@
 		aria-label="Recent searches"
 	>
 		{#each RecentSearches as search}
-			<div class="w-[90%] flex-shrink-0 snap-start" role="listitem">
+			<div class="w-[316px] flex-shrink-0 snap-start" role="listitem">
 				<SearchItemCard from={search.from} to={search.to} dateRange={search.dateRange} />
 			</div>
 		{/each}

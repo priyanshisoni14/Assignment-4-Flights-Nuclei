@@ -16,7 +16,14 @@
 </script>
 
 <!-- navbar bg override + overflow-visible so the Rewards tag can sit above the buttons -->
-<div class="[&_nav.bg-secondary]:!bg-[#112e47] [&_nav.bg-secondary]:!overflow-visible">
+<div
+	class="[&_nav.bg-secondary]:!bg-[#112e47]
+	[&_nav.bg-secondary_>_button]:!shadow-none
+	[&_nav.bg-secondary_>_button]:!p-0
+	[&_nav.bg-secondary_>_button_svg]:!fill-white
+	[&_nav.bg-secondary_>_button_svg]:!stroke-white
+	[&_nav.bg-secondary_>_button_svg_path]:!fill-white"
+>
 	<AppBar title="Flights" height="80px" enableZIndex showBackButton={true}>
 		<div slot="action" class="flex items-center gap-3">
 			<!-- wallet pill: white bg, navy icon + amount (overrides the library's blue) -->
@@ -49,7 +56,7 @@
 				</svg>
 			</button>
 
-			<!-- rewards button with the green tag on top -->
+			<!-- rewards button with -->
 			<div class="relative">
 				<button
 					class="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
@@ -79,14 +86,14 @@
 			<div class="dropdown dropdown-end">
 				<ThreeDotMenu let:closeDropDown colour="#FFFFFF">
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
-<li
-					on:click={() => handleMenuClick('My Bookings', closeDropDown)}
-					role="menuitem"
-					tabindex="0"
-					class="border-t p-3"
-				>
-					My Bookings
-				</li>
+					<li
+						on:click={() => handleMenuClick('My Bookings', closeDropDown)}
+						role="menuitem"
+						tabindex="0"
+						class="border-t p-3"
+					>
+						My Bookings
+					</li>
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<li
 						on:click={() => handleMenuClick('Web Check-In', closeDropDown)}
@@ -110,3 +117,36 @@
 		</div>
 	</AppBar>
 </div>
+
+<style>
+	/* Back button - remove DaisyUI outline/border */
+	:global(nav button[aria-label='Back button']) {
+		border: 0 !important;
+		border-width: 0 !important;
+		border-color: transparent !important;
+		outline: 0 !important;
+		box-shadow: none !important;
+		background: transparent !important;
+	}
+
+	/* Also remove any border from the inner back-button container */
+	:global(nav button[aria-label='Back button'] > div.bg-secondary) {
+		background-color: #112e47 !important;
+		border: 0 !important;
+		border-width: 0 !important;
+		border-color: transparent !important;
+		outline: 0 !important;
+		box-shadow: none !important;
+	}
+
+	/* Keep the arrow unchanged except for its white color */
+	:global(nav button[aria-label='Back button'] > div.bg-secondary svg) {
+		fill: #ffffff !important;
+		stroke: #ffffff !important;
+	}
+
+	:global(nav button[aria-label='Back button'] > div.bg-secondary svg path) {
+		fill: #ffffff !important;
+		stroke: #ffffff !important;
+	}
+</style>

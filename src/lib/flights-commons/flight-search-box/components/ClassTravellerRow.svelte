@@ -62,53 +62,58 @@
 
 <div class="flex w-[366px] flex-col space-y-4 rounded-xl bg-white px-4 py-3.5">
 	<div class="flex items-stretch">
-			<button
-				type="button"
-				class="flex min-w-0 flex-1 items-center gap-3 text-left"
-				aria-label={`Class, ${$flightSearchStore.travelClass}. Double tap to change.`}
-				on:click={handleOpenSelector}
+		<button
+			type="button"
+			class="flex min-w-0 flex-1 items-center gap-3 text-left"
+			aria-label={`Class, ${$flightSearchStore.travelClass}. Double tap to change.`}
+			on:click={handleOpenSelector}
+		>
+			<span
+				class="flex-shrink-0 text-gray-500 opacity-60 [&>svg]:h-7 [&>svg]:w-7"
+				aria-hidden="true"
 			>
-				<span class="flex-shrink-0 text-gray-500 opacity-60 [&>svg]:h-7 [&>svg]:w-7" aria-hidden="true">
-					<ClassIcon />
-				</span>
-				<span class="min-w-0" aria-hidden="true">
-					<p class="mb-1 text-sm leading-5 text-gray-500">Class</p>
-					<div class="flex items-center justify-between gap-2">
-						<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
-							{$flightSearchStore.travelClass.toLowerCase()}
-						</p>
-<span class="flex-shrink-0 opacity-70 [&>svg]:h-2 [&>svg]:w-3.5">
+				<ClassIcon />
+			</span>
+			<span class="min-w-0" aria-hidden="true">
+				<p class="mb-1 text-sm leading-5 text-gray-500">Class</p>
+				<div class="flex items-center justify-between gap-6">
+					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
+						{$flightSearchStore.travelClass.toLowerCase()}
+					</p>
+					<span class="flex-shrink-0 opacity-70 [&>svg]:h-3 [&>svg]:w-3.5">
 						<DropdownIcon />
 					</span>
-					</div>
-				</span>
-			</button>
-
-			<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
-
-			<button
-				type="button"
-				class="min-w-0 flex-1 text-left"
-				aria-label={`Traveller(s), ${totalTravellers}. Double tap to change.`}
-				on:click={handleOpenSelector}
-			>
-				<div
-					class="mb-1 flex items-center gap-1 text-sm leading-5 text-gray-500"
-					aria-hidden="true"
-				>
-					<span class="opacity-70 [&>svg]:h-5 [&>svg]:w-5"><TravellerIcon /></span>
-					<span>Traveller(s)</span>
 				</div>
-				<div class="flex items-center gap-2" aria-hidden="true">
+			</span>
+		</button>
+
+		<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
+
+		<button
+			type="button"
+			class="flex min-w-0 flex-1 items-center gap-3 text-left"
+			aria-label={`Traveller(s), ${totalTravellers}. Double tap to change.`}
+			on:click={handleOpenSelector}
+		>
+			<span
+				class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-7 [&>svg]:w-7"
+				aria-hidden="true"
+			>
+				<TravellerIcon />
+			</span>
+			<span class="min-w-0" aria-hidden="true">
+				<p class="mb-1 text-sm leading-5 text-gray-500">Traveller(s)</p>
+				<div class="flex items-center justify-between gap-2">
 					<p class="text-lg font-semibold leading-6 text-black">
 						{String(totalTravellers).padStart(2, '0')}
 					</p>
-					<span class="opacity-70 [&>svg]:h-2 [&>svg]:w-3.5">
+					<span class="flex-shrink-0 opacity-70 [&>svg]:h-3 [&>svg]:w-3.5">
 						<DropdownIcon />
 					</span>
 				</div>
-			</button>
-		</div>
+			</span>
+		</button>
+	</div>
 
 	<div class="mx-[-1rem] border-t border-gray-200" />
 
@@ -119,7 +124,7 @@
 				<div class="relative">
 					{#if fare.badge}
 						<span
-							class="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
+							class="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
 							aria-hidden="true"
 						>
 							{fare.badge}
@@ -127,7 +132,7 @@
 					{/if}
 					<button
 						type="button"
-						class="rounded-full border px-3 py-2 text-sm transition-colors
+						class="rounded-full border px-4 py-1.5 text-sm transition-colors
 					{$flightSearchStore.specialFare === fare.name
 							? 'border-primary bg-primary text-white'
 							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"
@@ -169,8 +174,7 @@
 </label>
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
-		<div slot="action" class="flex justify-center pt-2 pb-1" />
-		<div slot="details">
+		<div slot="details" class="bg-[#F0F0F5]">
 			<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
 		</div>
 	</BottomSheet>
@@ -185,5 +189,8 @@
 	.traveller-sheet :global(button.btn-primary.btn-outline path) {
 		fill: #374151 !important;
 		stroke: #374151 !important;
+	}
+	.traveller-sheet :global(.bg-\[\#CACACA\]) {
+		display: none !important;
 	}
 </style>

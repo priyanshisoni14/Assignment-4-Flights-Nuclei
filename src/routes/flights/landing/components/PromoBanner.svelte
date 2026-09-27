@@ -11,12 +11,12 @@
 	};
 </script>
 
-<div class="flex flex-col gap-3">
+<div class="flex flex-col gap-4">
 	<!-- "Compare and fly: cleartrip EaseMyTrip" -->
-	<p class="flex flex-wrap items-center gap-1.5 text-base text-gray-500">
+	<p class="flex flex-wrap items-center gap-1.5 text-base text-gray-500 mb-3">
 		<span>Compare and fly:</span>
 		<span class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto"><ClearTripIcon /></span>
-		<span class="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-auto"><EaseMyTripIcon /></span>
+		<span class="flex-shrink-0 [&>svg]:h-5 [&>svg]:w-auto"><EaseMyTripIcon /></span>
 	</p>
 
 	<!-- banner card -->
@@ -30,10 +30,10 @@
 
 			<div class="flex w-1/2 flex-shrink-0 flex-col items-end gap-1.5 text-right">
 				<span
-					class="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#E2703F] shadow-sm"
+					class="flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-[#E32526] shadow-sm"
 				>
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-						<circle cx="12" cy="12" r="10" fill="#E2703F" />
+						<circle cx="12" cy="12" r="10" fill="#E32526" />
 						<path
 							d="M7.5 12.5 10 15l6.5-7"
 							stroke="#fff"
@@ -45,7 +45,9 @@
 					cleartrip
 				</span>
 
-				<p class="text-base font-bold leading-5 text-[#26323b]">Book Your Flight with Ease</p>
+				<p class="whitespace-nowrap text-sm font-bold leading-5 text-[#26323b]">
+					Book Your Flight with Ease
+				</p>
 
 				<span
 					class="rounded-md border border-dashed border-gray-400 px-2.5 py-0.5 text-xs font-medium text-gray-600"

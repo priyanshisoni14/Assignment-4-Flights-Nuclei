@@ -29,7 +29,8 @@
     }
 </script>
 
-<div class="h-screen flex flex-col">
+<div class="h-screen flex flex-col
+    [&_nav.bg-secondary]:!rounded-none">
     <AppBar title="Listing Screen" />
 
     {#if $lceStore.isLoading}

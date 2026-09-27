@@ -30,7 +30,7 @@
 </script>
 
 <div
-	class="box-border flex h-[86px] w-[366px] items-stretch rounded-xl bg-white px-4 py-2.5"
+	class="box-border flex h-[86px] w-[366px] rounded-xl bg-white px-5 py-2.5"
 	role="group"
 	aria-label="Travel dates"
 >
@@ -55,12 +55,12 @@
 		</span>
 	</button>
 
-	<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
+	<div class="mx-8 w-px bg-gray-200" aria-hidden="true" />
 
 	<!-- RETURN: other equal half -->
 	<button
 		type="button"
-		class="min-w-0 flex-1 text-left ml-1"
+		class="min-w-0 flex-1 text-left ml-2"
 		aria-label={returnLabel}
 		on:click={handleReturnClick}
 	>

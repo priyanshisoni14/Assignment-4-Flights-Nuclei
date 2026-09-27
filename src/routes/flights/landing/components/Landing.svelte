@@ -1,3 +1,10 @@
+<script context="module" lang="ts">
+	// module-scope: survives Landing.svelte remounting when you navigate to
+	// SearchCity and back, so fetchScreenData's overwrite logic only runs once
+	// per real page load, not once per visit to this screen
+	let hasFetchedConfig = false;
+</script>
+
 <script lang="ts">
 	import { fetchFlightsCoreConfig } from '$flights/api/flights-api.js';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
@@ -21,7 +28,6 @@
 	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
 
 	// when the landing screen is mounted
-	let hasFetchedConfig = false;
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
 		setLoadingLce();
@@ -36,7 +42,10 @@
 	}
 	// fetch the backend config and update the store
 	const fetchScreenData = async () => {
-		// if the config has already been fetched
+		// if the config has already been fetched this session, don't touch
+		// source/destination again — SearchCity's live store updates (and
+		// applySavedSelectionFromSessionStorage below) are the source of truth
+		// from here on
 		if (hasFetchedConfig) {
 			setContentLce();
 			return;
@@ -146,27 +155,23 @@
 		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 	{:else if $lceStore.hasContent}
 		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
-			<div class="w-full px-6 pt-4 space-y-6 md:max-w-2xl md:mx-auto">
+			<div class="w-full px-6 pt-4 space-y-4 md:max-w-2xl md:mx-auto">
 				<div class="flex items-center gap-1.5">
 					<p class="sub-text text-[#676767] flex items-center gap-2">
 						Compare and fly:
-						<span
-							class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto"
-							aria-hidden="true"
+						<span class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto" aria-hidden="true"
 							><ClearTripIcon /></span
 						>
-						<span
-							class="flex-shrink-0 [&>svg]:h-4 [&>svg]:w-auto"
-							aria-hidden="true"
+						<span class="flex-shrink-0 [&>svg]:h-5 [&>svg]:w-auto" aria-hidden="true"
 							><EaseMyTripIcon /></span
 						>
 					</p>
 				</div>
 
-<FlightSearchBox />
-			<PromoBanner />
-			<UpcomingFlights />
-			<RecentSearches />
+				<FlightSearchBox />
+				<PromoBanner />
+				<UpcomingFlights />
+				<RecentSearches />
 			</div>
 		</main>
 	{/if}

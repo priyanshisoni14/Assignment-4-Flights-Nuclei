@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import { getAirportSearchResults, getPopularCities } from '$flights/api/flights-api.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import HistoryIcon from '$lib/flights-commons/icons/HistoryIcon.svelte';
+	import LocationPinIcon from '$lib/flights-commons/icons/LocationPinIcon.svelte';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import SearchBar from '@CDNA-Technologies/svelte-vitals/components/search-bar';
 	import { onMount, tick } from 'svelte';
@@ -9,16 +11,42 @@
 	import type { Airport } from '../types.js';
 	import CityCard from './CityCard.svelte';
 
+	const RECENT_SEARCHES_KEY = 'flights_recent_airports';
+	const MAX_RECENT_SEARCHES = 6;
+
 	//extract the title from the url
 	const appBarTitle = $page.url.searchParams.get('title') ?? 'Search City';
 	const searchType = $page.url.searchParams.get('type');
 
 	// api result is stored here
 	let airports: Airport[] = [];
+	let recentAirports: Airport[] = [];
 	let isSearching = false;
 	let searchText = '';
 
+	function loadRecentAirports(): Airport[] {
+		try {
+			const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
+			return raw ? (JSON.parse(raw) as Airport[]) : [];
+		} catch {
+			return [];
+		}
+	}
+
+	function saveRecentAirport(airport: Airport) {
+		const existing = loadRecentAirports().filter((a) => a.iataCode !== airport.iataCode);
+		const updated = [airport, ...existing].slice(0, MAX_RECENT_SEARCHES);
+		try {
+			localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+		} catch {
+			// storage unavailable, ignore
+		}
+		recentAirports = updated;
+	}
+
 	onMount(async () => {
+		recentAirports = loadRecentAirports();
+
 		const result = await getPopularCities();
 		const airportList = (result.response as { airportList?: Airport[] } | undefined)?.airportList;
 		// if the api call succeeds and returns a result
@@ -64,6 +92,9 @@
 			alert('Source and Destination cannot be the same.');
 			return;
 		}
+
+		saveRecentAirport(airport);
+
 		// update the store with the new selection
 		flightSearchStore.update((store) => {
 			if (searchType === 'source') store.source = newSelection;
@@ -81,10 +112,12 @@
 		await tick();
 		history.back();
 	};
+
+	$: isSearchActive = searchText.trim().length >= 2;
 </script>
 
-<div class="flex flex-col h-screen bg-base-100">
-	<div class="search-city-appbar">
+<div class="flex h-screen w-full flex-col overflow-x-hidden bg-white">
+	<div class="w-full [&_nav]:!bg-[#112e47]">
 		<AppBar
 			title={appBarTitle}
 			height="80px"
@@ -94,46 +127,73 @@
 		/>
 	</div>
 
-	<div class="px-6 md:px-6 md:max-w-2xl md:mx-auto w-full pt-6">
+	<div class="w-full px-6 pt-6 md:mx-auto md:max-w-2xl bg-[#F0F0F5]">
+		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label class="block">
 			<span class="sr-only">Search for a city or airport</span>
-			<SearchBar
-				placeholder="Enter City/Airport Name"
-				padding="p-0"
-				bind:searchText
-				debounceWaitTime={300}
-				minCharacterRequiredForSearch={2}
-				onSearchChange={handleSearchChange}
-				textStyle="font-size: 1rem; color: #101010;"
-			/>
+			<div class="rounded-2xl shadow-md">
+				<SearchBar
+					placeholder="Enter City/Airport Name"
+					padding="p-0"
+					bind:searchText
+					debounceWaitTime={300}
+					minCharacterRequiredForSearch={2}
+					onSearchChange={handleSearchChange}
+					textStyle="font-size: 1rem; color: #101010;"
+				/>
+			</div>
 		</label>
 	</div>
 
-	<div class="flex-1 overflow-y-auto md:max-w-2xl md:mx-auto md:w-full w-full">
-		<h3 class="px-6 pt-4 pb-2 heading-3">
-			{searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
-		</h3>
+	<div class="w-full flex-1 overflow-y-auto md:mx-auto md:max-w-2xl">
 		{#if isSearching}
-			<p class="px-6 text-sm base-content-light-60" role="status" aria-live="polite">
-				Searching...
-			</p>
+			<div class="h-1 w-full overflow-hidden bg-[#F0F0F5]" role="status" aria-live="polite">
+				<div class="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+				<span class="sr-only">Searching for cities and airports</span>
+			</div>
 		{/if}
-		<div
-			class="divide-y divide-gray-100"
-			role="list"
-			aria-label={searchText.trim().length >= 2 ? 'Search results' : 'Popular cities'}
-		>
-			{#each airports as airport}
-				<div role="listitem">
-					<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+
+		{#if isSearchActive}
+			<div class="flex w-full items-center gap-2 bg-[#F0F0F5] px-6 py-3" aria-hidden="true">
+				<span class="text-base font-bold text-black">Search results</span>
+			</div>
+			<div role="list" aria-label="Search results">
+				{#each airports as airport}
+					<div role="listitem">
+						<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+					</div>
+				{/each}
+			</div>
+		{:else}
+			{#if recentAirports.length > 0}
+				<div class="flex w-full items-center bg-[#F0F0F5] px-6 py-3" aria-hidden="true">
+					<span class="flex-shrink-0 [&>svg]:h-10 [&>svg]:w-10 [&_svg>rect]:!fill-transparent">
+						<HistoryIcon />
+					</span>
+					<span class="text-base font-bold text-black">Recent Searches</span>
 				</div>
-			{/each}
-		</div>
+				<div role="list" aria-label="Recent searches">
+					{#each recentAirports as airport}
+						<div role="listitem">
+							<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<div class="flex w-full items-center gap-2 bg-[#F0F0F5] px-6 py-3" aria-hidden="true">
+				<span class="flex-shrink-0 text-gray-600 [&>svg]:h-6 [&>svg]:w-6">
+					<LocationPinIcon />
+				</span>
+				<span class="text-base font-bold text-black">Popular Cities</span>
+			</div>
+			<div role="list" aria-label="Popular cities">
+				{#each airports as airport}
+					<div role="listitem">
+						<CityCard {airport} on:select={(e) => handleAirportSelect(e.detail)} />
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 </div>
-
-<style>
-	.search-city-appbar :global(nav.bg-secondary) {
-		background-color: #032f49;
-	}
-</style>
