@@ -50,7 +50,12 @@
 	[&_nav.bg-secondary_>_button_svg]:!stroke-white
 	[&_nav.bg-secondary_>_button_svg_path]:!fill-white"
 >
-	<AppBar title={$flightsTranslationStore('flights.title')} height="80px" enableZIndex showBackButton={true}>
+	<AppBar
+		title={$flightsTranslationStore('flights.title')}
+		height="80px"
+		enableZIndex
+		showBackButton={true}
+	>
 		<div slot="action" class="flex items-center gap-3">
 			<!-- wallet pill: white bg, navy icon + amount (overrides the library's blue) -->
 			<div

@@ -1,6 +1,6 @@
 <script>
-	import { flightsTranslationStore } from '$flights/i18n';
 	import { flights } from '$flights/FlightsData.js';
+	import { flightsTranslationStore } from '$flights/i18n';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 	import FlightCard from './components/FlightCard.svelte';
 </script>
@@ -23,9 +23,9 @@
 			>
 				{$flightsTranslationStore('flights.new_badge_lowercase')}
 			</span>
-			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]">{$flightsTranslationStore(
-				'flights.web_check_in'
-			)}</a>
+			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]"
+				>{$flightsTranslationStore('flights.web_check_in')}</a
+			>
 		</div>
 	</div>
 

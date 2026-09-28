@@ -22,6 +22,8 @@ export async function getAirportSearchResults(searchText: string) {
 		{ searchText: searchText.trim() }
 	);
 }
+
+// listing api - fetch the flights
 export function callGetFlightsSearchListV2(request: FlightListingRequest) {
 	const flightListingRequest = deepCopy(request);
 	flightListingRequest.departDate = dayjs(flightListingRequest.departDate).format('DD-MM-YYYY');
