@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import AddIcon from '$lib/flights-commons/icons/AddIcon.svelte';
 	import CalendarIcon from '$lib/flights-commons/icons/CalendarIcon.svelte';

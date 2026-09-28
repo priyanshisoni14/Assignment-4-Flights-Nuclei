@@ -1,5 +1,5 @@
 <script>
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import ArrowRightIcon from '$lib/flights-commons/icons/ArrowRightIcon.svelte';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 

@@ -1,5 +1,5 @@
 <script>
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flights as RecentSearches } from '$flights/FlightsData.js';
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>

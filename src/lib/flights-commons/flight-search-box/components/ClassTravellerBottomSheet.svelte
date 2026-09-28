@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';

@@ -1,6 +1,6 @@
 <script>
 	import { flights } from '$flights/FlightsData.js';
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 	import FlightCard from './components/FlightCard.svelte';
 </script>

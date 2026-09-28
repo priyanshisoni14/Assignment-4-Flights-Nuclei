@@ -7,6 +7,7 @@ const config = {
 	kit: {
 		adapter: node(),
 		alias: {
+			"$flights/i18n.js": "src/routes/flights/i18n.ts",
 			"$flights": "src/routes/flights",
 		},
 		version: {

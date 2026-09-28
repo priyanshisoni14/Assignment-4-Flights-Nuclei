@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import FlightIcon from '$lib/flights-commons/icons/FlightIcon.svelte';
 	import FlightToIcon from '$lib/flights-commons/icons/FlightToIcon.svelte';

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { getAirportSearchResults, getPopularCities } from '$flights/api/flights-api.js';
-	import { flightsTranslationStore } from '$flights/i18n';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import HistoryIcon from '$lib/flights-commons/icons/HistoryIcon.svelte';
 	import LocationPinIcon from '$lib/flights-commons/icons/LocationPinIcon.svelte';
