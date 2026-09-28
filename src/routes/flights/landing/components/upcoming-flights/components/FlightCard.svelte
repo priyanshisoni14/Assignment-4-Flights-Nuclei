@@ -1,4 +1,5 @@
 <script>
+	import { flightsTranslationStore } from '$flights/i18n';
 	import ArrowRightIcon from '$lib/flights-commons/icons/ArrowRightIcon.svelte';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 
@@ -41,7 +42,10 @@
 		<p class="mt-0.5 truncate text-xs text-gray-500">{dateRange}</p>
 
 		<div class="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-xs text-black">
-			<span>{travellers} Traveller{travellers > 1 ? 's' : ''}</span>
+			<span>{$flightsTranslationStore(
+					travellers > 1 ? 'flights.traveller_count_plural' : 'flights.traveller_count',
+					{ count: travellers }
+				)}</span>
 			<span class="text-gray-300">|</span>
 			<span>{travelClass}</span>
 			<span class="text-gray-300">|</span>

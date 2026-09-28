@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import AddIcon from '$lib/flights-commons/icons/AddIcon.svelte';
 	import CalendarIcon from '$lib/flights-commons/icons/CalendarIcon.svelte';
@@ -45,7 +46,7 @@
 			<CalendarIcon />
 		</span>
 		<span class="min-w-0" aria-hidden="true">
-			<p class="text-sm leading-5 text-gray-500">Departure</p>
+			<p class="text-sm leading-5 text-gray-500">{$flightsTranslationStore('flights.departure')}</p>
 			<p class="truncate text-lg font-semibold leading-6 text-black">
 				{dayjs($flightSearchStore.departureDate).format('DD MMM')}
 			</p>
@@ -64,7 +65,9 @@
 		aria-label={returnLabel}
 		on:click={handleReturnClick}
 	>
-		<p class="text-sm leading-5 text-gray-500" aria-hidden="true">Return</p>
+		<p class="text-sm leading-5 text-gray-500" aria-hidden="true">{$flightsTranslationStore(
+					'flights.return'
+				)}</p>
 		{#if $flightSearchStore.isRoundTrip && $flightSearchStore.returnDate}
 			<p class="truncate text-lg font-semibold leading-6 text-black" aria-hidden="true">
 				{dayjs($flightSearchStore.returnDate).format('DD MMM')}
@@ -77,14 +80,16 @@
 				class="flex items-center gap-2 text-lg font-semibold leading-6 text-primary"
 				aria-hidden="true"
 			>
-				<span>Add Return</span>
+				<span>{$flightsTranslationStore('flights.add_return')}</span>
 				<span
 					class="flex h-6 w-6 flex-shrink-0 items-center justify-center [&>svg]:h-6 [&>svg]:w-6 ml-2"
 				>
 					<AddIcon />
 				</span>
 			</div>
-			<p class="text-sm leading-5 text-gray-500" aria-hidden="true">and save more!</p>
+			<p class="text-sm leading-5 text-gray-500" aria-hidden="true">{$flightsTranslationStore(
+					'flights.add_return_subtext'
+				)}</p>
 		{/if}
 	</button>
 </div>

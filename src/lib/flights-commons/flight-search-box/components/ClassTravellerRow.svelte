@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import ClassIcon from '$lib/flights-commons/icons/ClassIcon.svelte';
 	import DropdownIcon from '$lib/flights-commons/icons/DropdownIcon.svelte';
@@ -12,10 +13,13 @@
 	import { onMount } from 'svelte';
 	import ClassTravellerBottomSheet from './ClassTravellerBottomSheet.svelte';
 
-	const SPECIAL_FARES = [
-		{ name: 'Student', badge: 'New' },
-		{ name: 'Senior Citizen' },
-		{ name: 'Armed Forces' }
+	$: SPECIAL_FARES = [
+		{
+			name: $flightsTranslationStore('flights.fare.student'),
+			badge: $flightsTranslationStore('flights.fare.new_badge')
+		},
+		{ name: $flightsTranslationStore('flights.fare.senior_citizen') },
+		{ name: $flightsTranslationStore('flights.fare.armed_forces') }
 	];
 	// for cdna to know which sheet to open
 	const TRAVELLER_SHEET_ID = 'traveller-class-selector';
@@ -75,7 +79,7 @@
 				<ClassIcon />
 			</span>
 			<span class="min-w-0" aria-hidden="true">
-				<p class="mb-1 text-sm leading-5 text-gray-500">Class</p>
+				<p class="mb-1 text-sm leading-5 text-gray-500">{$flightsTranslationStore('flights.class')}</p>
 				<div class="flex items-center justify-between gap-6">
 					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
 						{$flightSearchStore.travelClass.toLowerCase()}
@@ -102,7 +106,7 @@
 				<TravellerIcon />
 			</span>
 			<span class="min-w-0" aria-hidden="true">
-				<p class="mb-1 text-sm leading-5 text-gray-500">Traveller(s)</p>
+				<p class="mb-1 text-sm leading-5 text-gray-500">{$flightsTranslationStore('flights.travellers')}</p>
 				<div class="flex items-center justify-between gap-2">
 					<p class="text-lg font-semibold leading-6 text-black">
 						{String(totalTravellers).padStart(2, '0')}
@@ -118,7 +122,9 @@
 	<div class="mx-[-1rem] border-t border-gray-200" />
 
 	<fieldset class="flex flex-col gap-3">
-		<legend class="text-sm leading-5 text-gray-500">Special Fares (Optional)</legend>
+		<legend class="text-sm leading-5 text-gray-500">{$flightsTranslationStore(
+					'flights.special_fares'
+				)}</legend>
 		<div class="flex justify-evenly pt-3">
 			{#each SPECIAL_FARES as fare}
 				<div class="relative">
@@ -140,7 +146,9 @@
 						on:click={() => toggleSpecialFare(fare.name)}
 					>
 						{fare.name}
-						{#if fare.badge}<span class="sr-only">, new</span>{/if}
+						{#if fare.badge}
+							<span class="sr-only">, {$flightsTranslationStore('flights.fare.new_badge')}</span
+							>{/if}
 					</button>
 				</div>
 			{/each}
@@ -170,7 +178,9 @@
 			transform="translate(6 6) scale(0.8) translate(-6 -6)"
 		/>
 	</svg>
-	<span class="text-base text-gray-500">Show only non-stop flights</span>
+	<span class="text-base text-gray-500">{$flightsTranslationStore(
+					'flights.non_stop_only'
+				)}</span>
 </label>
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
@@ -26,5 +27,5 @@
 		<ClassTravellerRow />
 	</div>
 
-	<Button on:click={handleSearch}>Search Flights</Button>
+	<Button on:click={handleSearch}>{$flightsTranslationStore('flights.search_flights')}</Button>
 </div>

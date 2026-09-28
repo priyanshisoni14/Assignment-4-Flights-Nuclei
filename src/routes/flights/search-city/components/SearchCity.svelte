@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { getAirportSearchResults, getPopularCities } from '$flights/api/flights-api.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import HistoryIcon from '$lib/flights-commons/icons/HistoryIcon.svelte';
@@ -89,7 +90,7 @@
 			searchType === 'source' ? current.destination.iataCode : current.source.iataCode;
 		// if the user selects the same airport as the other end of the trip give alert
 		if (newSelection.iataCode === otherCode) {
-			alert('Source and Destination cannot be the same.');
+			alert($flightsTranslationStore('flights.same_source_destination_alert'));
 			return;
 		}
 
@@ -133,7 +134,7 @@
 			<span class="sr-only">Search for a city or airport</span>
 			<div class="rounded-2xl shadow-md">
 				<SearchBar
-					placeholder="Enter City/Airport Name"
+					placeholder={$flightsTranslationStore('flights.enter_city_placeholder')}
 					padding="p-0"
 					bind:searchText
 					debounceWaitTime={300}
@@ -149,13 +150,17 @@
 		{#if isSearching}
 			<div class="h-1 w-full overflow-hidden bg-[#F0F0F5]" role="status" aria-live="polite">
 				<div class="h-full w-1/3 animate-pulse rounded-full bg-primary" />
-				<span class="sr-only">Searching for cities and airports</span>
+				<span class="sr-only">{$flightsTranslationStore(
+					'flights.searching'
+				)}</span>
 			</div>
 		{/if}
 
 		{#if isSearchActive}
 			<div class="flex w-full items-center gap-2 bg-[#F0F0F5] px-6 py-3" aria-hidden="true">
-				<span class="text-base font-bold text-black">Search results</span>
+				<span class="text-base font-bold text-black">{$flightsTranslationStore(
+					'flights.search_results'
+				)}</span>
 			</div>
 			<div role="list" aria-label="Search results">
 				{#each airports as airport}
@@ -170,7 +175,9 @@
 					<span class="flex-shrink-0 [&>svg]:h-10 [&>svg]:w-10 [&_svg>rect]:!fill-transparent">
 						<HistoryIcon />
 					</span>
-					<span class="text-base font-bold text-black">Recent Searches</span>
+					<span class="text-base font-bold text-black">{$flightsTranslationStore(
+						'flights.recent_searches'
+					)}</span>
 				</div>
 				<div role="list" aria-label="Recent searches">
 					{#each recentAirports as airport}
@@ -185,7 +192,9 @@
 				<span class="flex-shrink-0 text-gray-600 [&>svg]:h-6 [&>svg]:w-6">
 					<LocationPinIcon />
 				</span>
-				<span class="text-base font-bold text-black">Popular Cities</span>
+				<span class="text-base font-bold text-black">{$flightsTranslationStore(
+					'flights.popular_cities'
+				)}</span>
 			</div>
 			<div role="list" aria-label="Popular cities">
 				{#each airports as airport}

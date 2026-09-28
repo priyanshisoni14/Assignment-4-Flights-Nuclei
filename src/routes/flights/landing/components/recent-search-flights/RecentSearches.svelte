@@ -1,10 +1,13 @@
 <script>
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flights as RecentSearches } from '$flights/FlightsData.js';
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>
 
 <div>
-	<h2 class="mb-3 text-xl font-semibold text-black">Recent Searches</h2>
+	<h2 class="mb-3 text-xl font-semibold text-black">{$flightsTranslationStore(
+		'flights.recent_searches'
+	)}</h2>
 
 	<div
 		class="scrollbar-hide flex snap-x snap-mandatory space-x-3 overflow-x-auto pb-1"

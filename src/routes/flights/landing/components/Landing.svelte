@@ -26,7 +26,6 @@
 	import PromoBanner from './PromoBanner.svelte';
 	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
 	import UpcomingFlights from './upcoming-flights/UpcomingFlights.svelte';
-
 	// when the landing screen is mounted
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');

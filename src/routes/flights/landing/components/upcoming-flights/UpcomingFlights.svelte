@@ -1,4 +1,5 @@
 <script>
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flights } from '$flights/FlightsData.js';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 	import FlightCard from './components/FlightCard.svelte';
@@ -11,7 +12,7 @@
 				href="/flights"
 				class="flex items-center gap-1 text-xl font-semibold text-[#4EA1F1] hover:opacity-80"
 			>
-				Upcoming Flights
+				{$flightsTranslationStore('flights.upcoming_flights')}
 				<span class="[&>svg]:h-4 [&>svg]:w-4" aria-hidden="true"><ChevronRightIcon /></span>
 			</a>
 		</h2>
@@ -20,9 +21,11 @@
 				class="rounded-md bg-red-500 px-2.5 py-1 text-xs font-semibold leading-none text-white"
 				aria-hidden="true"
 			>
-				new
+				{$flightsTranslationStore('flights.new_badge_lowercase')}
 			</span>
-			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]">Web Check-in</a>
+			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]">{$flightsTranslationStore(
+				'flights.web_check_in'
+			)}</a>
 		</div>
 	</div>
 

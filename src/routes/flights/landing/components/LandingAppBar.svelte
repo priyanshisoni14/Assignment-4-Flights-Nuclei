@@ -3,6 +3,12 @@
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import ThreeDotMenu from '@CDNA-Technologies/svelte-vitals/components/three-dot-menu';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import {
+		flightsTranslationStore,
+		flightsLanguageCode,
+		setFlightsLanguage,
+		supportedLocales
+	} from '$flights/i18n.js';
 
 	// rn no specific action is required for the back button
 	// handle the menu click rn just logs the label
@@ -13,6 +19,26 @@
 
 	const handleOffersClick = () => NucleiLogger.logInfo('Flights', 'Offers clicked');
 	const handleRewardsClick = () => NucleiLogger.logInfo('Flights', 'Rewards clicked');
+
+	// display names for the language sub-list — add an entry whenever a new
+	// locale is added to translations.js
+	const LOCALE_LABELS: Record<string, string> = {
+		en: 'English',
+		hi: 'हिन्दी'
+	};
+
+	let showLanguageOptions = false;
+
+	const toggleLanguageOptions = () => {
+		showLanguageOptions = !showLanguageOptions;
+	};
+
+	const handleLanguageSelect = (locale: string, close: () => void) => {
+		setFlightsLanguage(locale);
+		NucleiLogger.logInfo('Flights', `Language changed to ${locale}`);
+		showLanguageOptions = false;
+		close();
+	};
 </script>
 
 <!-- navbar bg override + overflow-visible so the Rewards tag can sit above the buttons -->
@@ -24,7 +50,7 @@
 	[&_nav.bg-secondary_>_button_svg]:!stroke-white
 	[&_nav.bg-secondary_>_button_svg_path]:!fill-white"
 >
-	<AppBar title="Flights" height="80px" enableZIndex showBackButton={true}>
+	<AppBar title={$flightsTranslationStore('flights.title')} height="80px" enableZIndex showBackButton={true}>
 		<div slot="action" class="flex items-center gap-3">
 			<!-- wallet pill: white bg, navy icon + amount (overrides the library's blue) -->
 			<div
@@ -36,7 +62,7 @@
 			<!-- offers button -->
 			<button
 				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
-				aria-label="Offers"
+				aria-label={$flightsTranslationStore('flights.appbar.offers')}
 				on:click={handleOffersClick}
 			>
 				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -60,7 +86,7 @@
 			<div class="relative">
 				<button
 					class="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
-					aria-label="Rewards"
+					aria-label={$flightsTranslationStore('flights.appbar.rewards')}
 					on:click={handleRewardsClick}
 				>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -92,7 +118,7 @@
 						tabindex="0"
 						class="border-t p-3"
 					>
-						My Bookings
+						{$flightsTranslationStore('flights.appbar.my_bookings')}
 					</li>
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<li
@@ -101,7 +127,7 @@
 						role="menuitem"
 						class="border-t p-3"
 					>
-						Web Check-In
+						{$flightsTranslationStore('flights.appbar.web_check_in')}
 					</li>
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<li
@@ -110,8 +136,38 @@
 						role="menuitem"
 						class="border-t p-3"
 					>
-						Help
+						{$flightsTranslationStore('flights.appbar.help')}
 					</li>
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<li
+						on:click={toggleLanguageOptions}
+						role="menuitem"
+						tabindex="0"
+						aria-expanded={showLanguageOptions}
+						class="flex items-center justify-between border-t p-3"
+					>
+						<span>{$flightsTranslationStore('flights.appbar.language')}</span>
+						<span class="text-sm text-gray-500"
+							>{LOCALE_LABELS[$flightsLanguageCode] ?? $flightsLanguageCode}</span
+						>
+					</li>
+					{#if showLanguageOptions}
+						{#each supportedLocales as locale}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<li
+								on:click={() => handleLanguageSelect(locale, closeDropDown)}
+								role="menuitem"
+								tabindex="0"
+								aria-current={$flightsLanguageCode === locale}
+								class="flex items-center justify-between border-t bg-gray-50 py-3 pl-6 pr-3 text-sm"
+							>
+								<span>{LOCALE_LABELS[locale] ?? locale}</span>
+								{#if $flightsLanguageCode === locale}
+									<span aria-hidden="true">✓</span>
+								{/if}
+							</li>
+						{/each}
+					{/if}
 				</ThreeDotMenu>
 			</div>
 		</div>

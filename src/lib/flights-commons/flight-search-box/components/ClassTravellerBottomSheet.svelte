@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
@@ -71,7 +72,9 @@
 
 <div class="flex flex-col gap-6 bg-[#F3F3F7] p-6">
 	<div>
-		<h3 class="mb-4 text-xl font-bold text-black">Select Traveller(s)</h3>
+		<h3 class="mb-4 text-xl font-bold text-black">{$flightsTranslationStore(
+				'flights.select_travellers'
+			)}</h3>
 
 		<div class="space-y-5">
 			{#each $flightConfigStore.guests.sort((a, b) => a.displayOrder - b.displayOrder) as guest}
@@ -126,7 +129,9 @@
 	</div>
 
 	<div>
-		<h3 class="mb-4 text-lg font-bold text-black">Select Class</h3>
+		<h3 class="mb-4 text-lg font-bold text-black">{$flightsTranslationStore(
+				'flights.select_class'
+			)}</h3>
 
 		<div class="space-y-4">
 			{#each sortedTravellers as option}
@@ -155,5 +160,7 @@
 		</div>
 	</div>
 
-	<Button on:click={handleProceed}>Done</Button>
+	<Button on:click={handleProceed}>{$flightsTranslationStore(
+			'flights.done'
+		)}</Button>
 </div>
