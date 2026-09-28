@@ -1,5 +1,5 @@
 <script>
-	import { flights } from '$flights/FlightsData.js';
+	import { flights } from '$flights/FlightsData.ts';
 	import { flightsTranslationStore } from '$flights/i18n.js';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
 	import FlightCard from './components/FlightCard.svelte';

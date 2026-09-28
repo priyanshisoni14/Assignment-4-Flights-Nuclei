@@ -23,7 +23,7 @@
 	];
 	// for cdna to know which sheet to open
 	const TRAVELLER_SHEET_ID = 'traveller-class-selector';
-
+	let sheetInstance = 0;
 	// The bottom-sheet library persists its open state via ?view=<modelId> in the
 	// URL (confirmed in BottomSheet's own docs).
 	// Strip our sheet's id on mount so a hard refresh never auto-reopens it.
@@ -49,6 +49,7 @@
 		$flightSearchStore.adults + $flightSearchStore.children + $flightSearchStore.infants;
 
 	function handleOpenSelector() {
+		sheetInstance += 1;
 		openBottomSheet(TRAVELLER_SHEET_ID);
 	}
 
@@ -79,7 +80,9 @@
 				<ClassIcon />
 			</span>
 			<span class="min-w-0" aria-hidden="true">
-				<p class="mb-1 text-sm leading-5 text-gray-500">{$flightsTranslationStore('flights.class')}</p>
+				<p class="mb-1 text-sm leading-5 text-gray-500">
+					{$flightsTranslationStore('flights.class')}
+				</p>
 				<div class="flex items-center justify-between gap-6">
 					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
 						{$flightSearchStore.travelClass.toLowerCase()}
@@ -106,7 +109,9 @@
 				<TravellerIcon />
 			</span>
 			<span class="min-w-0" aria-hidden="true">
-				<p class="mb-1 text-sm leading-5 text-gray-500">{$flightsTranslationStore('flights.travellers')}</p>
+				<p class="mb-1 text-sm leading-5 text-gray-500">
+					{$flightsTranslationStore('flights.travellers')}
+				</p>
 				<div class="flex items-center justify-between gap-2">
 					<p class="text-lg font-semibold leading-6 text-black">
 						{String(totalTravellers).padStart(2, '0')}
@@ -122,9 +127,9 @@
 	<div class="mx-[-1rem] border-t border-gray-200" />
 
 	<fieldset class="flex flex-col gap-3">
-		<legend class="text-sm leading-5 text-gray-500">{$flightsTranslationStore(
-					'flights.special_fares'
-				)}</legend>
+		<legend class="text-sm leading-5 text-gray-500"
+			>{$flightsTranslationStore('flights.special_fares')}</legend
+		>
 		<div class="flex justify-evenly pt-3">
 			{#each SPECIAL_FARES as fare}
 				<div class="relative">
@@ -178,14 +183,14 @@
 			transform="translate(6 6) scale(0.8) translate(-6 -6)"
 		/>
 	</svg>
-	<span class="text-base text-gray-500">{$flightsTranslationStore(
-					'flights.non_stop_only'
-				)}</span>
+	<span class="text-base text-gray-500">{$flightsTranslationStore('flights.non_stop_only')}</span>
 </label>
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
-		<div slot="details" class="bg-[#F0F0F5]">
-			<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
+		<div slot="details" class="bg-[#F0F0F5}">
+			{#key sheetInstance}
+				<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
+			{/key}
 		</div>
 	</BottomSheet>
 </div>

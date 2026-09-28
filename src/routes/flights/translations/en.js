@@ -52,6 +52,9 @@ export default {
 	'flights.searching': 'Searching...',
 	'flights.enter_city_placeholder': 'Enter City/Airport Name',
 	'flights.same_source_destination_alert': 'Source and Destination cannot be the same.',
+	'flights.no_results': 'No results found',
+    'flights.search_error': 'Something went wrong. Please try again.',
+    'flights.retry': 'Retry',
 
 	// Generic
 	'flights.search_flights': 'Search Flights'

@@ -45,5 +45,8 @@ export default {
 	'flights.enter_city_placeholder': 'शहर/हवाई अड्डे का नाम दर्ज करें',
 	'flights.same_source_destination_alert': 'स्रोत और गंतव्य समान नहीं हो सकते।',
 
-	'flights.search_flights': 'उड़ानें खोजें'
+	'flights.search_flights': 'उड़ानें खोजें',
+	'flights.no_results': 'कोई परिणाम नहीं मिला',
+    'flights.search_error': 'कुछ गलत हो गया। कृपया पुनः प्रयास करें।',
+    'flights.retry': 'पुनः प्रयास करें',
 };

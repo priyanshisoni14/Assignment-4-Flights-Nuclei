@@ -14,7 +14,7 @@
 
 	const RECENT_SEARCHES_KEY = 'flights_recent_airports';
 	const MAX_RECENT_SEARCHES = 6;
-
+	let searchError = false;
 	//extract the title from the url
 	const appBarTitle = $page.url.searchParams.get('title') ?? 'Search City';
 	const searchType = $page.url.searchParams.get('type');
@@ -54,12 +54,8 @@
 		if (!result.hasError() && airportList) {
 			airports = airportList;
 		} else {
-			// fall back to static list only if the live call fails
-			airports = staticFallbackCities.map((c: any) => ({
-				iataCode: c.airportDetails.split(' ')[0],
-				city: c.locationName,
-				name: c.airportDetails
-			}));
+			searchError = true;
+			airports = [];
 		}
 	});
 
@@ -153,7 +149,33 @@
 				<span class="sr-only">{$flightsTranslationStore('flights.searching')}</span>
 			</div>
 		{/if}
+		{#if searchError}
+			<div class="flex w-full flex-col items-center gap-2 px-6 py-8 text-center" role="alert">
+				<span class="text-sm text-gray-600">
+					{$flightsTranslationStore('flights.search_error')}
+				</span>
 
+				<button
+					type="button"
+					class="text-sm font-semibold text-primary underline"
+					on:click={() => handleSearchChange(searchText)}
+				>
+					{$flightsTranslationStore('flights.retry')}
+				</button>
+			</div>
+		{:else if airports.length === 0}
+			<div class="flex w-full items-center justify-center px-6 py-8 text-center">
+				<span class="text-sm text-gray-600">
+					{$flightsTranslationStore('flights.no_results')}
+				</span>
+			</div>
+		{:else}
+			<div role="list" aria-label="Search results">
+				{#each airports as airport}
+					<!-- existing card -->
+				{/each}
+			</div>
+		{/if}
 		{#if isSearchActive}
 			<div class="flex w-full items-center gap-2 bg-[#F0F0F5] px-6 py-3" aria-hidden="true">
 				<span class="text-base font-bold text-black"

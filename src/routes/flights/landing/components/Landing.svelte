@@ -68,10 +68,8 @@
 				partnerCountry: searchRequest.partnerCountry ?? 'IN'
 			});
 			// find the matched traveller class
-			const matchedClass = searchRequest.travellers?.find(
-				(t: any) =>
-					t.value.replace(' Class', '').toLowerCase() === searchRequest.travellerClass.toLowerCase()
-			);
+			const apiClass = searchRequest.travellerClass?.toUpperCase();
+			const matchedClass = searchRequest.travellers?.find((t: any) => t.key === apiClass);
 
 			// check for a city the user already picked on the search-city screen —
 			// without this, the API's default source/destination silently overwrites
@@ -106,7 +104,7 @@
 				adults: searchRequest.adultCount,
 				children: searchRequest.childCount,
 				infants: searchRequest.infantCount,
-				travelClass: matchedClass?.key ?? searchRequest.travellerClass.toUpperCase(),
+				travelClass: matchedClass?.key ?? apiClass ?? 'ECONOMY',
 				nonStopOnly: searchRequest.configMap?.NON_STOP_FLIGHT_LANDING === 'true'
 			}));
 		}
