@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
+	import {
+		fareCalendarStore,
+		resetFareCalendar,
+		setFareCalendar,
+		setFareCalendarLoading
+	} from '$flights/stores/fareCalendarStore.js';
 	import { resetFlightListing, setFlightListing } from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
-	import type {
-		CalendarDate,
-		FareDetail
-	} from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
+	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
@@ -26,9 +29,6 @@
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
 
-	let fares: FareDetail[] = [];
-	let fareLoading = true;
-
 	// single source of truth: the selected calendar date is the search's departure date
 	$: departure = dayjs($flightSearchStore.departureDate);
 	$: selectedDate = {
@@ -39,6 +39,7 @@
 
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
+		resetFareCalendar(); // clear fares from any previous search
 		setLoadingLce();
 		fetchFareCalendar(); // not awaited: a fare calendar failure must not block the listing
 		await fetchScreenData();
@@ -51,7 +52,7 @@
 	});
 
 	const fetchFareCalendar = async () => {
-		fareLoading = true;
+		setFareCalendarLoading();
 		const searchstore = get(flightSearchStore);
 
 		const start = dayjs();
@@ -76,11 +77,12 @@
 			}
 		});
 
-		fares =
+		// on failure or when the feature is disabled, store an empty list so the calendar hides
+		setFareCalendar(
 			!result.hasError() && result.response?.enabled
 				? result.response.onwardJourneyFareDetails ?? []
-				: [];
-		fareLoading = false;
+				: []
+		);
 	};
 
 	const handleDateSelect = (e: CustomEvent<CalendarDate>) => {
@@ -91,7 +93,7 @@
 		// adjust the value type if your store keeps departureDate as a string instead of a Date
 		flightSearchStore.update((s) => ({ ...s, departureDate: new Date(year, month - 1, day) }));
 		setLoadingLce();
-		fetchScreenData();
+		fetchScreenData(); // fares are not refetched: the calendar window stays the same
 	};
 
 	const fetchScreenData = async () => {
@@ -157,9 +159,14 @@
 	<ListingAppBar />
 
 	<!-- outside the lce branches, so it stays mounted while the listing reloads -->
-	{#if fareLoading || fares.length > 0}
+	{#if $fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0}
 		<div class="flex justify-center bg-[#f0f0f5]">
-			<FareCalendar {fares} {selectedDate} loading={fareLoading} on:select={handleDateSelect} />
+			<FareCalendar
+				fares={$fareCalendarStore.fares}
+				{selectedDate}
+				loading={$fareCalendarStore.isLoading}
+				on:select={handleDateSelect}
+			/>
 		</div>
 	{/if}
 
