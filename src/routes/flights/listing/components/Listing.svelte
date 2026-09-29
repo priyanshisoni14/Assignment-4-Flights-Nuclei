@@ -7,10 +7,16 @@
 		setFareCalendar,
 		setFareCalendarLoading
 	} from '$flights/stores/fareCalendarStore.js';
-	import { resetFlightListing, setFlightListing } from '$flights/stores/flightListingStore.js';
+	import {
+		clearQuickFilters,
+		quickFilters,
+		resetFlightListing,
+		setFlightListing
+	} from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
+	import { buildAppliedSortFilter } from '$lib/flights-commons/utils/flight-filter-utils.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -37,8 +43,15 @@
 		day: departure.date()
 	} as CalendarDate;
 
+	// true only while a chip change is refetching: loader shows in the list area,
+	// the filter bar stays mounted
+	let isListLoading = false;
+	// only the latest request is allowed to update the screen
+	let requestCounter = 0;
+
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
+		resetFlightListing(); // clear flights + chips from any previous search
 		resetFareCalendar(); // clear fares from any previous search
 		setLoadingLce();
 		fetchFareCalendar(); // not awaited: a fare calendar failure must not block the listing
@@ -90,15 +103,27 @@
 		if (year === selectedDate.year && month === selectedDate.month && day === selectedDate.day) {
 			return;
 		}
-		// adjust the value type if your store keeps departureDate as a string instead of a Date
 		flightSearchStore.update((s) => ({ ...s, departureDate: new Date(year, month - 1, day) }));
 		setLoadingLce();
-		fetchScreenData(); // fares are not refetched: the calendar window stays the same
+		fetchScreenData(); // currently selected chips are sent with the new date
 	};
 
-	const fetchScreenData = async () => {
-		// resets the store to initial state when starting a new search
-		resetFlightListing();
+	// a chip was toggled: refetch from the server with the new filters
+	const handleFilterChange = () => fetchScreenData(true);
+
+	// "Clear filters" button in the empty state
+	const handleClearFilters = () => {
+		clearQuickFilters();
+		fetchScreenData(true);
+	};
+
+	/**
+	 * isFilterRefetch = true  -> only the list area shows a loader
+	 * isFilterRefetch = false -> full screen loader (already set by the caller)
+	 */
+	const fetchScreenData = async (isFilterRefetch = false) => {
+		const currentRequest = ++requestCounter;
+		isListLoading = isFilterRefetch;
 
 		// get - reads the store once; we need a snapshot of the search data for the api call
 		const searchstore = get(flightSearchStore);
@@ -135,16 +160,21 @@
 				childCount: searchstore.children,
 				infantCount: searchstore.infants
 			},
+			// applied quick filters go to the server on every call
+			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
 			is_round_trip: searchstore.isRoundTrip,
 			partnerCountry: config.partnerCountry ?? 'IN',
-			fareType: ''
+			fareType: 'regular'
 		});
+
+		// a newer request was fired while this one was in flight: ignore this response
+		if (currentRequest !== requestCounter) return;
+		isListLoading = false;
 
 		if (result.hasError()) {
 			setErrorLce(result.error);
 			return;
 		}
-		// set the flight listing store with api response
 		setFlightListing(result.response as FlightListingResponse);
 		setContentLce();
 	};
@@ -179,9 +209,15 @@
 	{:else if $lceStore.hasContent}
 		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5]">
 			<div class="w-full space-y-3 px-6 pt-4 md:mx-auto md:max-w-2xl">
-				<ListingFilterBar />
+				<ListingFilterBar on:change={handleFilterChange} />
 				<CompareBanner />
-				<FlightListing />
+				{#if isListLoading}
+					<div class="flex justify-center py-10">
+						<PrimaryLoader />
+					</div>
+				{:else}
+					<FlightListing on:clear={handleClearFilters} />
+				{/if}
 			</div>
 		</main>
 	{/if}

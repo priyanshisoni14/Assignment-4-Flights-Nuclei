@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import {
 		appliedFilterCount,
 		quickFilters,
@@ -7,11 +8,14 @@
 	import SortAndFilterIcon from '$lib/flights-commons/icons/SortAndFilterIcon.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 
+	const dispatch = createEventDispatcher<{ change: void }>();
+
 	const handleSortFilterClick = () => NucleiLogger.logInfo('Flights', 'Sort & Filter clicked');
 
 	const handleChipClick = (type: string, value: string, title: string) => {
 		toggleQuickFilter(type, value);
 		NucleiLogger.logInfo('Flights', `${title} clicked`);
+		dispatch('change'); // parent re-calls the api with the new filters
 	};
 </script>
 

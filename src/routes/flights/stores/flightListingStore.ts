@@ -6,7 +6,6 @@ import type {
 	QuickFilter,
 	WarningMessage
 } from '$lib/flights-commons/messages/flights-listing-msg.js';
-import { applyQuickFilters } from '$lib/flights-commons/utils/flight-filter-utils.js';
 
 interface FlightListingState {
 	onwardFlights: FlightSegment[];
@@ -32,27 +31,29 @@ const initialState: FlightListingState = {
 
 export const flightListingStore = writable<FlightListingState>(initialState);
 
-// takes the api response and updates the store
+// takes the api response and updates the store.
+// Chips are only taken from the response the first time; after that we keep our own
+// list so selections survive every filtered refetch.
 export function setFlightListing(res: FlightListingResponse) {
-	flightListingStore.set({
+	flightListingStore.update((s) => ({
 		onwardFlights: res.onwardFlights ?? [],
 		returnFlights: res.returnFlights ?? [],
-		quickFilters: res.quickFilters ?? [],
+		quickFilters: s.quickFilters.length > 0 ? s.quickFilters : (res.quickFilters ?? []),
 		warningMessages: res.warningMessages ?? [],
 		isRoundTrip: res.isRoundTrip,
 		isInternational: res.isInternational,
 		fareType: res.fareType,
 		minimumTimeGapForRoundTrip: res.minimumTimeGapForRoundTrip
-	});
+	}));
 }
 
-// resets the store to initial state when starting a new search
+// resets the store to initial state (call when the listing screen is opened)
 export function resetFlightListing() {
 	flightListingStore.set(initialState);
 }
 
-// quickfilter id is not unique so we need to find the right one
-// to toggle so map on the filterType and filterValue
+// quickfilter id is not unique so map on filterType and filterValue.
+// The caller must re-call the listing api after this.
 export function toggleQuickFilter(filterType: string, filterValue: string) {
 	flightListingStore.update((s) => ({
 		...s,
@@ -64,7 +65,7 @@ export function toggleQuickFilter(filterType: string, filterValue: string) {
 	}));
 }
 
-// deselects every chip for a "Clear filters" button
+// deselects every chip; the caller must re-call the listing api after this
 export function clearQuickFilters() {
 	flightListingStore.update((s) => ({
 		...s,
@@ -74,35 +75,25 @@ export function clearQuickFilters() {
 
 // ---- derived stores ----
 
-// stores the onward flights from the main flightlisting store
+// flights exactly as the api returned them (already filtered by the server)
 export const onwardFlights = derived(flightListingStore, ($s) => $s.onwardFlights);
-// the quick-filter chips that are applied to the onward flights
 export const quickFilters = derived(flightListingStore, ($s) => $s.quickFilters);
-// true when the API returned flights but the selected chips hide all of them
-export const hasFlights = derived(onwardFlights, ($f) => $f.length > 0);
 
-
-// badge number on the Sort & Filter button returns the number of chips selected
+// badge number on the Sort & Filter button = number of chips selected
 export const appliedFilterCount = derived(
 	quickFilters,
 	($q) => $q.filter((f) => f.isSelected).length
 );
 
-// onward flights after the selected quick-filter chips are applied
-export const filteredFlights = derived(
-	[onwardFlights, quickFilters],
-	([$flights, $chips]) => applyQuickFilters($flights, $chips)
-);
-
-// true when the API returned flights but the selected chips hide all of them
+// server returned nothing while filters are applied -> show "clear filters"
 export const noFlightsMatchFilters = derived(
-	[hasFlights, filteredFlights],
-	([$has, $filtered]) => $has && $filtered.length === 0
+	[onwardFlights, appliedFilterCount],
+	([$flights, $count]) => $flights.length === 0 && $count > 0
 );
 
 // ---- helpers for the flight card (not stores) ----
 
-//the fare the card should show: the one flagged lowest, else the cheapest 
+// the fare the card should show: the one flagged lowest, else the cheapest
 export function getBestFare(segment: FlightSegment): PartnerFare | undefined {
 	return (
 		segment.fareList.find((f) => f.isLowestPrice) ??
