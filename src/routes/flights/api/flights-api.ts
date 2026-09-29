@@ -2,7 +2,7 @@ import { ApiUtil } from '@CDNA-Technologies/svelte-vitals/api-util';
 import { deepCopy } from '@CDNA-Technologies/svelte-vitals/util';
 import dayjs from 'dayjs';
 import type { FlightListingRequest, FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
-import type { CalendarWithFareRequest, CalendarWithFareResponse } from '$lib/flights-commons/messages/calendar.msg.js';
+import type {CalendarWithFareRequest,CalendarWithFareResponse} from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 // fetch the backend config
 export async function fetchFlightsCoreConfig() {
 	return await ApiUtil.post(

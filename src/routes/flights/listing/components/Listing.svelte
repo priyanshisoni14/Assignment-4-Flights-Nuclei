@@ -1,8 +1,12 @@
 <script lang="ts">
-	import { callGetFlightsSearchListV2 } from '$flights/api/flights-api.js';
+	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { resetFlightListing, setFlightListing } from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import type {
+		CalendarDate,
+		FareDetail
+	} from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
@@ -17,29 +21,90 @@
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import CompareBanner from './CompareBanner.svelte';
+	import FareCalendar from './FareCalendar.svelte';
 	import FlightListing from './FlightListing.svelte';
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
+
+	let fares: FareDetail[] = [];
+	let fareLoading = true;
+
+	// single source of truth: the selected calendar date is the search's departure date
+	$: departure = dayjs($flightSearchStore.departureDate);
+	$: selectedDate = {
+		year: departure.year(),
+		month: departure.month() + 1,
+		day: departure.date()
+	} as CalendarDate;
+
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		setLoadingLce();
+		fetchFareCalendar(); // not awaited: a fare calendar failure must not block the listing
 		await fetchScreenData();
 	});
+
+	const toCalendarDate = (d: dayjs.Dayjs): CalendarDate => ({
+		year: d.year(),
+		month: d.month() + 1,
+		day: d.date()
+	});
+
+	const fetchFareCalendar = async () => {
+		fareLoading = true;
+		const searchstore = get(flightSearchStore);
+
+		const start = dayjs();
+		const defaultEnd = start.add(15, 'day');
+		const depart = dayjs(searchstore.departureDate);
+		// make sure the searched date is always inside the requested window
+		const end = depart.isAfter(defaultEnd) ? depart.add(7, 'day') : defaultEnd;
+
+		const result = await getFareCalendar({
+			categoryId: 7,
+			startDate: toCalendarDate(start),
+			endDate: toCalendarDate(end),
+			travellers: {
+				adultCount: searchstore.adults,
+				childCount: searchstore.children,
+				infantCount: searchstore.infants
+			},
+			additionalInfo: {
+				sourceCode: searchstore.source.iataCode,
+				destCode: searchstore.destination.iataCode,
+				isRoundTrip: String(searchstore.isRoundTrip)
+			}
+		});
+
+		fares =
+			!result.hasError() && result.response?.enabled
+				? result.response.onwardJourneyFareDetails ?? []
+				: [];
+		fareLoading = false;
+	};
+
+	const handleDateSelect = (e: CustomEvent<CalendarDate>) => {
+		const { year, month, day } = e.detail;
+		if (year === selectedDate.year && month === selectedDate.month && day === selectedDate.day) {
+			return;
+		}
+		// adjust the value type if your store keeps departureDate as a string instead of a Date
+		flightSearchStore.update((s) => ({ ...s, departureDate: new Date(year, month - 1, day) }));
+		setLoadingLce();
+		fetchScreenData();
+	};
 
 	const fetchScreenData = async () => {
 		// resets the store to initial state when starting a new search
 		resetFlightListing();
 
-		// get the search and config store values
-		//get - manually reads the store once and stores its snapshot in a variable
-		// required cause need snapshot of of search data when making api call
+		// get - reads the store once; we need a snapshot of the search data for the api call
 		const searchstore = get(flightSearchStore);
 		const config = get(flightConfigStore);
 
-		// for label the backend expects, e.g. "Economy Class"
+		// label the backend expects, e.g. "Economy Class"
 		const travellerClass = config.travellers.find((t: any) => t.key === searchstore.travelClass);
 
-		// a-airport object
 		// convert the search store values to the api expected format
 		const toAirport = (a: { iataCode: string; locationName: string; airportName: string }) => ({
 			iataCode: a.iataCode,
@@ -68,7 +133,6 @@
 				childCount: searchstore.children,
 				infantCount: searchstore.infants
 			},
-
 			is_round_trip: searchstore.isRoundTrip,
 			partnerCountry: config.partnerCountry ?? 'IN',
 			fareType: ''
@@ -89,14 +153,18 @@
 	}
 </script>
 
-<div
-	class="h-screen flex flex-col
-    [&_nav.bg-secondary]:!rounded-none"
->
+<div class="h-screen flex flex-col [&_nav.bg-secondary]:!rounded-none">
 	<ListingAppBar />
 
+	<!-- outside the lce branches, so it stays mounted while the listing reloads -->
+	{#if fareLoading || fares.length > 0}
+		<div class="flex justify-center bg-[#f0f0f5]">
+			<FareCalendar {fares} {selectedDate} loading={fareLoading} on:select={handleDateSelect} />
+		</div>
+	{/if}
+
 	{#if $lceStore.isLoading}
-		<div class="h-screen flex flex-col justify-center">
+		<div class="flex flex-1 flex-col justify-center">
 			<PrimaryLoader />
 		</div>
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
