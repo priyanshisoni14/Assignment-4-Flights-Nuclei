@@ -73,6 +73,15 @@ export function clearQuickFilters() {
 	}));
 }
 
+// filters returned nothing (or the server errored while filters were applied):
+// empty the list but keep the chips so the user can see / clear them
+export function setNoFlights() {
+	flightListingStore.update((s) => ({
+		...s,
+		onwardFlights: [],
+		returnFlights: []
+	}));
+}
 // ---- derived stores ----
 
 // flights exactly as the api returned them (already filtered by the server)

@@ -11,7 +11,8 @@
 		clearQuickFilters,
 		quickFilters,
 		resetFlightListing,
-		setFlightListing
+		setFlightListing,
+		setNoFlights
 	} from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
@@ -144,8 +145,6 @@
 		const result = await callGetFlightsSearchListV2({
 			src: toAirport(searchstore.source),
 			des: toAirport(searchstore.destination),
-			// callGetFlightsSearchListV2 reformats this to DD-MM-YYYY itself.
-			// YYYY-MM-DD is parsed as local time, so the date won't shift a day.
 			departDate: dayjs(searchstore.departureDate).format('YYYY-MM-DD'),
 			returnDate:
 				searchstore.isRoundTrip && searchstore.returnDate
@@ -160,7 +159,6 @@
 				childCount: searchstore.children,
 				infantCount: searchstore.infants
 			},
-			// applied quick filters go to the server on every call
 			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
 			is_round_trip: searchstore.isRoundTrip,
 			partnerCountry: config.partnerCountry ?? 'IN',
@@ -169,12 +167,24 @@
 
 		// a newer request was fired while this one was in flight: ignore this response
 		if (currentRequest !== requestCounter) return;
+
 		isListLoading = false;
 
 		if (result.hasError()) {
+			// filters are applied and the server found nothing:
+			// stay on the listing so the user can clear the filters
+			const hasFiltersApplied = get(quickFilters).some((f) => f.isSelected);
+
+			if (hasFiltersApplied) {
+				setNoFlights();
+				setContentLce();
+				return;
+			}
+
 			setErrorLce(result.error);
 			return;
 		}
+
 		setFlightListing(result.response as FlightListingResponse);
 		setContentLce();
 	};
