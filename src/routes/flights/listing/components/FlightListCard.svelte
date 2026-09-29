@@ -1,22 +1,28 @@
 <script lang="ts">
-	import type { FlightSegment } from '$flights/messages/flights-listing-msg.js';
+	import type { FlightSegment } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { getBestFare } from '$flights/stores/flightListingStore.js';
+	import BookMark from '$lib/flights-commons/icons/Bookmark.svelte';
 	import ExtraBaggageIcon from '$lib/flights-commons/icons/ExtraBaggage.svelte';
 	import FreeMealIcon from '$lib/flights-commons/icons/FreeMeal.svelte';
 	import RefundableIcon from '$lib/flights-commons/icons/Refundable.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import BookMark from '$lib/flights-commons/icons/Bookmark.svelte';
 
 	export let segment: FlightSegment;
 
 	$: details = segment.onwardSegmentDetails;
 	$: airline = details.segmentAirlineInfos[0];
+	// connecting flights list one entry per leg; count the other carriers
+	$: otherAirlines = new Set(details.segmentAirlineInfos.map((a) => a.airlineName)).size - 1;
 	// "19:55 - 22:30"
 	$: [departTime, arriveTime] = details.airlineTime.split(' - ');
 	// "02h 35m | Non-Stop"
 	$: [duration, stopsLabel] = details.airlineDuration.split(' | ');
 	$: fare = getBestFare(segment);
 	$: badges = buildBadges(segment);
+
+	// flights are in IST (UTC+5:30 = 19800s); compare calendar days for the "+1" marker
+	const istDay = (ts: string) => Math.floor((Number(ts) + 19800) / 86400);
+	$: nextDay = istDay(details.arrivalTimestamp) > istDay(details.departTimestamp);
 
 	// design shows only the positive badges, max two
 	function buildBadges(s: FlightSegment) {
@@ -42,7 +48,7 @@
 	role="button"
 	tabindex="0"
 	on:click={handleCardClick}
-	on:keydown={(e) => e.key === 'Enter' && handleCardClick()}
+	on:keydown={(e) => e.target === e.currentTarget && e.key === 'Enter' && handleCardClick()}
 >
 	<!-- header: airline + badges (last badge runs to the card edge) -->
 	<div class="mt-2 pt-2 flex h-8 items-center justify-between pl-4">
@@ -54,7 +60,9 @@
 					class="h-[20px] w-[20px] shrink-0 rounded object-contain"
 				/>
 			{/if}
-			<span class="truncate text-base leading-6 text-[#111]">{airline?.airlineName ?? ''}</span>
+			<span class="truncate text-base leading-6 text-[#111]">
+				{airline?.airlineName ?? ''}{otherAirlines > 0 ? ` +${otherAirlines}` : ''}
+			</span>
 		</div>
 
 		<div class="flex shrink-0 items-center gap-2">
@@ -91,7 +99,11 @@
 
 			<!-- arrive -->
 			<div>
-				<p class="text-lg font-semibold leading-6 text-[#111]">{arriveTime}</p>
+				<p class="text-lg font-semibold leading-6 text-[#111]">
+					{arriveTime}{#if nextDay}<sup class="ml-0.5 text-[10px] font-normal text-[#6B6B6B]"
+							>+1</sup
+						>{/if}
+				</p>
 				<p class="text-xs leading-4 ml-7 text-[#6B6B6B]">
 					{details.destinationAirportCode.iataCode}
 				</p>

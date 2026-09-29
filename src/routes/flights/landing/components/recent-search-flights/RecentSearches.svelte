@@ -1,6 +1,6 @@
 <script>
-	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { flights as RecentSearches } from '$flights/FlightsData.ts';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import SearchItemCard from './components/SearchItemCard.svelte';
 </script>
 

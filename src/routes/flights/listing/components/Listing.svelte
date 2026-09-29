@@ -3,6 +3,7 @@
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { resetFlightListing, setFlightListing } from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -16,10 +17,9 @@
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import CompareBanner from './CompareBanner.svelte';
+	import FlightListing from './FlightListing.svelte';
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
-	import FlightListing from './FlightListing.svelte';
-
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		setLoadingLce();
@@ -27,14 +27,20 @@
 	});
 
 	const fetchScreenData = async () => {
+		// resets the store to initial state when starting a new search
 		resetFlightListing();
 
-		const s = get(flightSearchStore);
+		// get the search and config store values
+		//get - manually reads the store once and stores its snapshot in a variable
+		// required cause need snapshot of of search data when making api call
+		const searchstore = get(flightSearchStore);
 		const config = get(flightConfigStore);
 
-		// the human label the backend expects, e.g. "Economy Class"
-		const travellerClass = config.travellers.find((t: any) => t.key === s.travelClass);
+		// for label the backend expects, e.g. "Economy Class"
+		const travellerClass = config.travellers.find((t: any) => t.key === searchstore.travelClass);
 
+		// a-airport object
+		// convert the search store values to the api expected format
 		const toAirport = (a: { iataCode: string; locationName: string; airportName: string }) => ({
 			iataCode: a.iataCode,
 			city: a.locationName,
@@ -44,32 +50,26 @@
 		});
 
 		const result = await callGetFlightsSearchListV2({
-			src: toAirport(s.source),
-			des: toAirport(s.destination),
+			src: toAirport(searchstore.source),
+			des: toAirport(searchstore.destination),
 			// callGetFlightsSearchListV2 reformats this to DD-MM-YYYY itself.
 			// YYYY-MM-DD is parsed as local time, so the date won't shift a day.
-			departDate: dayjs(s.departureDate).format('YYYY-MM-DD'),
-			returnDate: s.isRoundTrip && s.returnDate ? dayjs(s.returnDate).format('YYYY-MM-DD') : '',
+			departDate: dayjs(searchstore.departureDate).format('YYYY-MM-DD'),
+			returnDate:
+				searchstore.isRoundTrip && searchstore.returnDate
+					? dayjs(searchstore.returnDate).format('YYYY-MM-DD')
+					: '',
 			travellerClass: {
-				key: s.travelClass,
-				value: travellerClass?.value ?? s.travelClass
+				key: searchstore.travelClass,
+				value: travellerClass?.value ?? searchstore.travelClass
 			},
 			passenger: {
-				adultCount: s.adults,
-				childCount: s.children,
-				infantCount: s.infants
+				adultCount: searchstore.adults,
+				childCount: searchstore.children,
+				infantCount: searchstore.infants
 			},
-			appliedSortFilter: [
-				{
-					tabId: 'DUMMY',
-					sortId: '1',
-					filtersList: [
-						{ filterId: 1, appliedFilterValueList: { filterValues: ['0'] } },
-						{ filterId: 2, appliedFilterValueList: { filterValues: ['0'] } }
-					]
-				}
-			],
-			is_round_trip: s.isRoundTrip,
+
+			is_round_trip: searchstore.isRoundTrip,
 			partnerCountry: config.partnerCountry ?? 'IN',
 			fareType: ''
 		});
@@ -78,7 +78,7 @@
 			setErrorLce(result.error);
 			return;
 		}
-
+		// set the flight listing store with api response
 		setFlightListing(result.response as FlightListingResponse);
 		setContentLce();
 	};

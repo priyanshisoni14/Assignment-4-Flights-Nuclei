@@ -50,7 +50,7 @@ export interface FlightListingRequest {
 	returnDate: string;
 	travellerClass: KeyValue<TravellerClassKey>;
 	passenger: PassengerCount;
-	appliedSortFilter: AppliedSortFilter[];
+	appliedSortFilter?: AppliedSortFilter[];
 	is_round_trip: boolean;
 	partnerCountry: string;
 	fareType: string;

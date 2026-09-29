@@ -2,7 +2,7 @@ import { ApiUtil } from '@CDNA-Technologies/svelte-vitals/api-util';
 import { deepCopy } from '@CDNA-Technologies/svelte-vitals/util';
 import dayjs from 'dayjs';
 import type { FlightListingRequest, FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
-
+import type { CalendarWithFareRequest, CalendarWithFareResponse } from '$lib/flights-commons/messages/calendar.msg.js';
 // fetch the backend config
 export async function fetchFlightsCoreConfig() {
 	return await ApiUtil.post(
@@ -34,5 +34,12 @@ export function callGetFlightsSearchListV2(request: FlightListingRequest) {
 		'/com.gonuclei.flights.v1.ListingService/GetFlightsSearchListV2',
 		flightListingRequest,
 		false
+	);
+}
+
+export async function getFareCalendar(calendarWithFareRequest: CalendarWithFareRequest) {
+	return await ApiUtil.post<CalendarWithFareRequest, CalendarWithFareResponse>(
+		'/com.gonuclei.commonservice.v1.CommonService/GetFareCalendar',
+		calendarWithFareRequest
 	);
 }
