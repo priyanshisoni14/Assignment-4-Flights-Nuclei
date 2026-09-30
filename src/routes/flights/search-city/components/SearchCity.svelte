@@ -23,7 +23,7 @@
 	let recentAirports: Airport[] = [];
 	let isSearching = false;
 	let searchText = '';
-
+	let sameCityError = '';
 	function loadRecentAirports(): Airport[] {
 		try {
 			const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
@@ -83,11 +83,13 @@
 		// get the other end of the trip
 		const otherCode =
 			searchType === 'source' ? current.destination.iataCode : current.source.iataCode;
-		// if the user selects the same airport as the other end of the trip give alert
+
+		// same airport as the other end of the trip: show the error under the input
 		if (newSelection.iataCode === otherCode) {
-			alert($flightsTranslationStore('flights.same_source_destination_alert'));
+			sameCityError = $flightsTranslationStore('flights.same_source_destination_alert');
 			return;
 		}
+		sameCityError = '';
 
 		saveRecentAirport(airport);
 
@@ -110,6 +112,11 @@
 	};
 
 	$: isSearchActive = searchText.trim().length >= 2;
+	// the error is about the last tap, so drop it as soon as the user edits the search text
+	$: {
+		searchText;
+		sameCityError = '';
+	}
 </script>
 
 <div class="flex h-screen w-full flex-col overflow-x-hidden bg-white">
@@ -127,7 +134,11 @@
 		<!-- svelte-ignore a11y-label-has-associated-control -->
 		<label class="block">
 			<span class="sr-only">Search for a city or airport</span>
-			<div class="rounded-2xl shadow-md">
+			<div
+				class="overflow-hidden rounded-2xl border-2 bg-white shadow-md transition-colors duration-150 {sameCityError
+					? 'border-red-500'
+					: 'border-transparent'}"
+			>
 				<SearchBar
 					placeholder={$flightsTranslationStore('flights.enter_city_placeholder')}
 					padding="p-0"
@@ -139,6 +150,14 @@
 				/>
 			</div>
 		</label>
+
+		{#if sameCityError}
+			<!-- role="alert" so screen readers announce it, like the old alert did -->
+			<p class="px-1 pt-2 text-sm font-medium text-red-600" role="alert">
+				{sameCityError}
+			</p>
+		{/if}
+		<div class="pb-2" />
 	</div>
 
 	<div class="w-full flex-1 overflow-y-auto md:mx-auto md:max-w-2xl">

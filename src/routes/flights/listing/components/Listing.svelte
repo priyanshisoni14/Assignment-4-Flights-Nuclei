@@ -16,9 +16,15 @@
 		setFlightListing,
 		setNoFlights
 	} from '$flights/stores/flightListingStore.js';
+	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
+	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
 	import { buildAppliedSortFilter } from '$lib/flights-commons/utils/flight-filter-utils.js';
+	import {
+		loadSearchFromCache,
+		saveSearchToCache
+	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
@@ -38,6 +44,7 @@
 	import FlightListing from './FlightListing.svelte';
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
+	import ModifySearchSheet from './ModifySearchSheet.svelte';
 
 	// the url is the single source of truth for the search, so a hard reload keeps everything.
 	// routeKey is a string, so params is only rebuilt when the url segments really change
@@ -59,7 +66,83 @@
 	onMount(() => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		mounted = true;
+		// after a hard reload the config store is empty: the class/traveller options need it
+		ensureFlightConfig();
 	});
+
+	// $page also changes when the bottom sheet adds ?view=..., so only these two primitives are
+	// watched. A string only invalidates when its value really changes
+	$: nonStopParam = $page.url.searchParams.get('nonStop');
+	$: specialFareParam = $page.url.searchParams.get('specialFare');
+
+	// the url is the truth: copy it into flightSearchStore (and the cache), so the sheet opens
+	// pre-filled and landing shows the same search when the user goes back
+	const syncStoreFromUrl = (
+		p: ListingParams,
+		nonStop: string | null,
+		specialFare: string | null
+	) => {
+		// the user is editing in the sheet (or came back from search-city): don't overwrite the draft
+		if (get(modifySheetOpen)) return;
+
+		const cached = loadSearchFromCache();
+		const current = get(flightSearchStore);
+		// the url has no airport name, so take it from whichever source knows this iata code
+		const airportName = (iata: string) =>
+			[current.source, current.destination, cached?.source, cached?.destination].find(
+				(l) => l?.iataCode === iata && l.airportName
+			)?.airportName;
+		const [y, m, d] = p.departDate.split('-').map(Number);
+		const next = {
+			...current,
+			source: {
+				locationName: p.src.city,
+				iataCode: p.src.iataCode,
+				airportName: airportName(p.src.iataCode)
+			},
+			destination: {
+				locationName: p.des.city,
+				iataCode: p.des.iataCode,
+				airportName: airportName(p.des.iataCode)
+			},
+			departureDate: new Date(y, m - 1, d),
+			isRoundTrip: p.returnDate !== null,
+			returnDate: p.returnDate
+				? (([ry, rm, rd]) => new Date(ry, rm - 1, rd))(p.returnDate.split('-').map(Number))
+				: undefined,
+			adults: p.adults,
+			children: p.children,
+			infants: p.infants,
+			travelClass: p.travelClass.key,
+			nonStopOnly: nonStop === 'true',
+			specialFare
+		};
+		flightSearchStore.set(next);
+		saveSearchToCache(next);
+	};
+	$: if (params) syncStoreFromUrl(params, nonStopParam, specialFareParam);
+
+	// search-city saves the picked city here; if the edit is abandoned it must not leak to landing
+	const clearPickedCities = () => {
+		sessionStorage.removeItem('flights_selected_source');
+		sessionStorage.removeItem('flights_selected_destination');
+	};
+
+	const openModifySheet = () => modifySheetOpen.set(true);
+
+	// X / backdrop / Esc: throw the draft away and show what the url says again
+	const handleModifyClose = () => {
+		modifySheetOpen.set(false);
+		clearPickedCities();
+		if (params) syncStoreFromUrl(params, nonStopParam, specialFareParam);
+	};
+
+	// Search pressed: FlightSearchBox already saved the cache and is replacing the url.
+	// Once the url changes, the sync above runs again with the new values
+	const handleModifySearched = () => {
+		modifySheetOpen.set(false);
+		clearPickedCities();
+	};
 
 	// runs once after mount, and again whenever the url params change (e.g. a new date)
 	$: if (mounted && params) loadListing(params);
@@ -203,10 +286,28 @@
 		setLoadingLce();
 		if (params) fetchScreenData(params);
 	}
+
+	// the "Modify Search" button is rendered inside the library's ErrorHandling, whose event and error
+	// shape we can't rely on. So we watch the click itself: if the clicked button says "Modify",
+	// open the sheet instead of letting the library run its retry
+	const handleErrorAreaClick = (e: MouseEvent) => {
+		const button = (e.target as HTMLElement | null)?.closest('button');
+		if (!button || !/modify/i.test(button.textContent ?? '')) return;
+
+		e.stopPropagation(); // capture phase: the library's own handler never sees this click
+		openModifySheet();
+	};
 </script>
 
 <div class="h-screen flex flex-col [&_nav.bg-secondary]:!rounded-none">
-	<ListingAppBar />
+	<div class:invisible={$modifySheetOpen}>
+		<ListingAppBar on:edit={openModifySheet} />
+	</div>
+	<ModifySearchSheet
+		open={$modifySheetOpen}
+		on:close={handleModifyClose}
+		on:searched={handleModifySearched}
+	/>
 
 	<!-- fare calendar and loading indicator -->
 	{#if params && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
@@ -224,7 +325,10 @@
 			<PrimaryLoader />
 		</div>
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
-		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="flex flex-1 flex-col" on:click|capture={handleErrorAreaClick}>
+			<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		</div>
 	{:else if $lceStore.hasContent}
 		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5]">
 			<div class="w-full space-y-3 px-6 pt-4 md:mx-auto md:max-w-2xl">

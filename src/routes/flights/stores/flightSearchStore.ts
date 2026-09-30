@@ -33,3 +33,7 @@ export const flightSearchStore = writable<FlightSearchState>({
 	nonStopOnly: false,
 	specialFare: null
 });
+
+// true while the Modify Search sheet is open on the listing screen. It is a store (not a local
+// variable) so it survives the trip to the search-city screen, where the listing is destroyed
+export const modifySheetOpen = writable(false);

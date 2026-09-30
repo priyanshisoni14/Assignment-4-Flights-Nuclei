@@ -4,6 +4,9 @@
 	import { parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher<{ edit: void }>();
 
 	// "30 Sep". The date is built from its parts, because new Date('2026-09-30')
 	// is read as UTC and can shift by a day in some timezones
@@ -35,6 +38,7 @@
 
 	const handleEditClick = () => {
 		NucleiLogger.logInfo('Flights', 'Edit option clicked');
+		dispatch('edit');
 	};
 </script>
 

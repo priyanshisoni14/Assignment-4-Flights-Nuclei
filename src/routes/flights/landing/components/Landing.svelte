@@ -8,10 +8,11 @@
 <script lang="ts">
 	import { fetchFlightsCoreConfig } from '$flights/api/flights-api.js';
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
-	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import ClearTripIcon from '$lib/flights-commons/icons/cleartrip.svelte';
 	import EaseMyTripIcon from '$lib/flights-commons/icons/easemytrip.svelte';
+	import { loadSearchFromCache } from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -29,15 +30,22 @@
 	// when the landing screen is mounted
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
+		modifySheetOpen.set(false); // a half-finished edit from the listing screen is dropped
 		setLoadingLce();
 		// fetch the backend config and update the store
 		await fetchScreenData();
+		applyCachedSearch();
 		applySavedSelectionFromSessionStorage();
 	});
 	// when API fails
 	function handleRetry() {
 		setLoadingLce();
 		fetchScreenData();
+	}
+	// the last search made (e.g. edited from the listing screen) wins over the api defaults
+	function applyCachedSearch() {
+		const cached = loadSearchFromCache();
+		if (cached) flightSearchStore.set(cached);
 	}
 	// fetch the backend config and update the store
 	const fetchScreenData = async () => {
