@@ -26,7 +26,7 @@
 	<!-- top sheet: hangs from the top edge and slides down -->
 	<div
 		class="fixed inset-x-0 top-0 z-50 mx-auto flex max-h-[95vh] w-full flex-col overflow-y-auto rounded-b-2xl bg-[#F0F0F5] px-6 pb-3 pt-6 md:max-w-2xl"
-		transition:fly={{ y: -600, duration: 250 }}
+		transition:fly={{ y: -400, duration: 250 }}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Modify Search"

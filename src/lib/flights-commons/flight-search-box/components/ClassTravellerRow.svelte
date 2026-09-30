@@ -11,8 +11,8 @@
 	} from '@CDNA-Technologies/svelte-vitals/components/bottom-sheet';
 	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import ClassTravellerBottomSheet from './ClassTravellerBottomSheet.svelte';
-
 	$: SPECIAL_FARES = [
 		{
 			name: $flightsTranslationStore('flights.fare.student'),
@@ -189,7 +189,9 @@
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
 		<div slot="details" class="bg-[#F0F0F5}">
 			{#key sheetInstance}
-				<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
+				<div in:fly={{ y: 40, duration: 250 }}>
+					<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />
+				</div>
 			{/key}
 		</div>
 	</BottomSheet>

@@ -8,6 +8,7 @@
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import SearchBar from '@CDNA-Technologies/svelte-vitals/components/search-bar';
 	import { onMount, tick } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import type { Airport } from '../types.js';
 	import CityCard from './CityCard.svelte';
 
@@ -119,7 +120,10 @@
 	}
 </script>
 
-<div class="flex h-screen w-full flex-col overflow-x-hidden bg-white">
+<div
+	class="fixed inset-0 z-50 flex w-full flex-col overflow-x-hidden bg-white"
+	in:fly={{ x: 48, duration: 250 }}
+>
 	<div class="w-full [&_nav]:!bg-[#112e47]">
 		<AppBar
 			title={appBarTitle}
