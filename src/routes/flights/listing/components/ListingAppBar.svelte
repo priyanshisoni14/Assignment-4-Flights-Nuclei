@@ -1,11 +1,16 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
-	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import { parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 
-	// "22 Dec"
-	const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+	// "30 Sep". The date is built from its parts, because new Date('2026-09-30')
+	// is read as UTC and can shift by a day in some timezones
+	const formatDate = (isoDate: string) => {
+		const [y, m, d] = isoDate.split('-').map(Number);
+		return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+	};
 
 	// "PREMIUM_ECONOMY" -> "Premium Economy"
 	const formatClass = (key: string) =>
@@ -15,12 +20,16 @@
 			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 			.join(' ');
 
-	$: search = $flightSearchStore;
-	$: travellerCount = search.adults + search.children + search.infants;
+	// everything comes from the url, which is available on the server too,
+	// so the first paint already shows the right route
+	$: search = parseListingParams($page.params.params ?? '');
+	$: travellerCount = search ? search.adults + search.children + search.infants : 0;
 	$: travellerLabel = `${travellerCount} ${travellerCount === 1 ? 'Traveller' : 'Travellers'}`;
-	$: subtitle = `${formatDate(search.departureDate)} | ${travellerLabel} | ${formatClass(
-		search.travelClass
-	)}`;
+	$: subtitle = search
+		? `${formatDate(search.departDate)} | ${travellerLabel} | ${formatClass(
+				search.travelClass.key
+		  )}`
+		: '';
 
 	const handleBack = () => history.back();
 
@@ -44,9 +53,9 @@
 		<svelte:fragment slot="title">
 			<div class="flex min-w-0 flex-col justify-center gap-[5px] text-white">
 				<p class="flex min-w-0 items-center text-xl font-semibold leading-6">
-					<span class="truncate">{search.source.locationName}</span>
+					<span class="truncate">{search?.src.city ?? ''}</span>
 					<span class="mx-3 shrink-0 font-normal">→</span>
-					<span class="truncate">{search.destination.locationName}</span>
+					<span class="truncate">{search?.des.city ?? ''}</span>
 				</p>
 				<p class="truncate text-sm font-medium leading-5">{subtitle}</p>
 			</div>

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
+	import { page } from '$app/stores';
 	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
 	import {
 		fareCalendarStore,
@@ -6,7 +9,6 @@
 		setFareCalendar,
 		setFareCalendarLoading
 	} from '$flights/stores/fareCalendarStore.js';
-	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import {
 		clearQuickFilters,
 		quickFilters,
@@ -14,10 +16,11 @@
 		setFlightListing,
 		setNoFlights
 	} from '$flights/stores/flightListingStore.js';
-	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { buildAppliedSortFilter } from '$lib/flights-commons/utils/flight-filter-utils.js';
+	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -36,14 +39,15 @@
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
 
-	// single source of truth: the selected calendar date is the search's departure date
-	$: departure = dayjs($flightSearchStore.departureDate);
-	$: selectedDate = {
-		year: departure.year(),
-		month: departure.month() + 1,
-		day: departure.date()
-	} as CalendarDate;
+	// the url is the single source of truth for the search, so a hard reload keeps everything.
+	// routeKey is a string, so params is only rebuilt when the url segments really change
+	$: routeKey = $page.params.params ?? '';
+	$: params = parseListingParams(routeKey);
+	// the calendar highlights the departure date from the url
+	$: selectedDate = toCalendarDate(dayjs(params?.departDate));
 
+	let mounted = false;
+	let isFirstLoad = true;
 	// true only while a chip change is refetching: loader shows in the list area,
 	// the filter bar stays mounted
 	let isListLoading = false;
@@ -52,46 +56,51 @@
 	// even if there is a stale api call only new data is shown
 	let requestCounter = 0;
 
-	onMount(async () => {
+	onMount(() => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
-		resetFlightListing(); // clear flights + chips from any previous search
-		resetFareCalendar(); // clear fares from any previous search
-		setLoadingLce();
-		fetchFareCalendar(); // not awaited: a fare calendar failure must not block the listing
-		await fetchScreenData();
+		mounted = true;
 	});
 
+	// runs once after mount, and again whenever the url params change (e.g. a new date)
+	$: if (mounted && params) loadListing(params);
+
+	const loadListing = (p: ListingParams) => {
+		setLoadingLce();
+		if (isFirstLoad) {
+			isFirstLoad = false;
+			resetFlightListing(); // clear flights + chips from any previous search
+			resetFareCalendar(); // clear fares from any previous search
+			fetchFareCalendar(p); // not awaited: a fare calendar failure must not block the listing
+		}
+		// on a date change the chips are kept and sent with the new date
+		fetchScreenData(p);
+	};
+
 	// convert a dayjs date to the fare calendar api format
-	const toCalendarDate = (d: dayjs.Dayjs): CalendarDate => ({
-		year: d.year(),
-		month: d.month() + 1,
-		day: d.date()
-	});
-	// to call the fare calendar api using the current search parameters from flightSearchStore
-	const fetchFareCalendar = async () => {
+	function toCalendarDate(d: dayjs.Dayjs): CalendarDate {
+		return { year: d.year(), month: d.month() + 1, day: d.date() };
+	}
+
+	// to call the fare calendar api using the search parameters from the url
+	const fetchFareCalendar = async (p: ListingParams) => {
 		setFareCalendarLoading();
-		const searchstore = get(flightSearchStore);
 
 		const start = dayjs(); // today
 		const defaultEnd = start.add(15, 'day'); // 15 days from today
-		const depart = dayjs(searchstore.departureDate);
+		const depart = dayjs(p.departDate);
 		// make sure the searched date is always inside the requested window
-		// if user selected depart date is outside calendar window, it extends the window
+		// if the depart date is outside the calendar window, it extends the window
 		const end = depart.isAfter(defaultEnd) ? depart.add(7, 'day') : defaultEnd;
-		// calling api
+
 		const result = await getFareCalendar({
 			categoryId: 7,
 			startDate: toCalendarDate(start),
 			endDate: toCalendarDate(end),
-			travellers: {
-				adultCount: searchstore.adults,
-				childCount: searchstore.children,
-				infantCount: searchstore.infants
-			},
+			travellers: { adultCount: p.adults, childCount: p.children, infantCount: p.infants },
 			additionalInfo: {
-				sourceCode: searchstore.source.iataCode,
-				destCode: searchstore.destination.iataCode,
-				isRoundTrip: String(searchstore.isRoundTrip)
+				sourceCode: p.src.iataCode,
+				destCode: p.des.iataCode,
+				isRoundTrip: String(p.returnDate !== null)
 			}
 		});
 
@@ -103,73 +112,64 @@
 		);
 	};
 
-	// user selected a date in the calendar - refetch the listing
-	// new api call is made only if the selected date is different from the current one
+	// user selected a date in the calendar: put it in the url.
+	// the url change re-runs loadListing above, and a reload keeps the chosen date
 	const handleDateSelect = (e: CustomEvent<CalendarDate>) => {
+		if (!params) return;
 		const { year, month, day } = e.detail;
 		if (year === selectedDate.year && month === selectedDate.month && day === selectedDate.day) {
 			return;
 		}
-		flightSearchStore.update((s) => ({ ...s, departureDate: new Date(year, month - 1, day) }));
-		setLoadingLce();
-		fetchScreenData(); // currently selected chips are sent with the new date
+		const departDate = dayjs(new Date(year, month - 1, day)).format('YYYY-MM-DD');
+		goto(`${base}/flights/listing/${buildListingPath({ ...params, departDate })}`, {
+			replaceState: true
+		});
 	};
 
 	// a chip was toggled: refetch from the server with the new filters
-	const handleFilterChange = () => fetchScreenData(true);
+	const handleFilterChange = () => {
+		if (params) fetchScreenData(params, true);
+	};
 
 	// "Clear filters" button in the empty state
 	const handleClearFilters = () => {
 		clearQuickFilters();
-		fetchScreenData(true);
+		if (params) fetchScreenData(params, true);
 	};
 
-	//isFilterRefetch = true  -> only the list area shows a loader
-	//isFilterRefetch = false -> full screen loader (already set by the caller)
-
-	const fetchScreenData = async (isFilterRefetch = false) => {
+	// isFilterRefetch = true  -> only the list area shows a loader
+	// isFilterRefetch = false -> full screen loader (already set by the caller)
+	const fetchScreenData = async (p: ListingParams, isFilterRefetch = false) => {
 		// increment the request counter to ignore responses from older requests
 		const currentRequest = ++requestCounter;
 		isListLoading = isFilterRefetch;
 
-		// get - reads the store once; we need a snapshot of the search data for the api call
-		const searchstore = get(flightSearchStore);
-		const config = get(flightConfigStore);
-
-		// label the backend expects, e.g. "Economy Class"
-		const travellerClass = config.travellers.find((t: any) => t.key === searchstore.travelClass);
-
-		// convert the search store values to the api expected format
-		const toAirport = (a: { iataCode: string; locationName: string; airportName: string }) => ({
-			iataCode: a.iataCode,
-			city: a.locationName,
-			name: a.airportName,
-			countryCode: 'IN',
-			iconUrl: ''
-		});
-		// calls the flights api with expected request parameters
+		// calls the flights api with the values from the url
 		const result = await callGetFlightsSearchListV2({
-			src: toAirport(searchstore.source),
-			des: toAirport(searchstore.destination),
-			departDate: dayjs(searchstore.departureDate).format('YYYY-MM-DD'),
-			returnDate:
-				searchstore.isRoundTrip && searchstore.returnDate
-					? dayjs(searchstore.returnDate).format('YYYY-MM-DD')
-					: '',
-			travellerClass: {
-				key: searchstore.travelClass,
-				value: travellerClass?.value ?? searchstore.travelClass
+			src: {
+				iataCode: p.src.iataCode,
+				city: p.src.city,
+				name: p.src.city,
+				countryCode: p.src.countryCode,
+				iconUrl: ''
 			},
-			passenger: {
-				adultCount: searchstore.adults,
-				childCount: searchstore.children,
-				infantCount: searchstore.infants
+			des: {
+				iataCode: p.des.iataCode,
+				city: p.des.city,
+				name: p.des.city,
+				countryCode: p.des.countryCode,
+				iconUrl: ''
 			},
+			// callGetFlightsSearchListV2 reformats these to DD-MM-YYYY itself
+			departDate: p.departDate,
+			returnDate: p.returnDate ?? '',
+			travellerClass: p.travelClass,
+			passenger: { adultCount: p.adults, childCount: p.children, infantCount: p.infants },
 			// converts the selected quick-filter chips into the request's appliedSortFilter
 			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
-			is_round_trip: searchstore.isRoundTrip,
-			partnerCountry: config.partnerCountry ?? 'IN',
-			fareType: 'regular'
+			is_round_trip: p.returnDate !== null,
+			partnerCountry: p.partnerCountry,
+			fareType: p.fareType
 		});
 
 		// a newer request was fired while this one was in flight: ignore this response
@@ -183,8 +183,6 @@
 			const hasFiltersApplied = get(quickFilters).some(
 				(f: { isSelected: boolean }) => f.isSelected
 			);
-			//filters are applied and the server found nothing:
-			// stay on the listing so the user can clear the filters
 			if (hasFiltersApplied) {
 				// it keeps the chips so the user can clear them and empties the flight list
 				setNoFlights();
@@ -203,7 +201,7 @@
 	// retry button in the error state
 	function handleRetry() {
 		setLoadingLce();
-		fetchScreenData();
+		if (params) fetchScreenData(params);
 	}
 </script>
 
@@ -211,13 +209,17 @@
 	<ListingAppBar />
 
 	<!-- fare calendar and loading indicator -->
-	{#if $fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0}
+	{#if params && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
 		<div class="flex justify-center bg-[#f0f0f5]">
 			<FareCalendar {selectedDate} on:select={handleDateSelect} />
 		</div>
 	{/if}
 
-	{#if $lceStore.isLoading}
+	{#if !params}
+		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B]">
+			This search link is not valid. Please go back and search again.
+		</p>
+	{:else if $lceStore.isLoading}
 		<div class="flex flex-1 flex-col justify-center">
 			<PrimaryLoader />
 		</div>
