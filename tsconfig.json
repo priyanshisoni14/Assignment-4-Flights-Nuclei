@@ -9,5 +9,11 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "node16"
-	}
+	},
+	"exclude": [
+		"node_modules",
+		"build",
+		".svelte-kit/output",
+		"src/lib/flights-commons/icons/Flights.svelte"
+	]
 }

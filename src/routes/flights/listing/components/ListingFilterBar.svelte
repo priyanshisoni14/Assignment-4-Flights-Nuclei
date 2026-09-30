@@ -47,6 +47,7 @@
 	>
 		{#each $quickFilters as chip (chip.filterType + chip.filterValue)}
 			<!-- svelte-ignore a11y-no-interactive-element-to-noninteractive-role -->
+			<!-- svelte-ignore a11y-role-supports-aria-props -->
 			<button
 				type="button"
 				role="listitem"

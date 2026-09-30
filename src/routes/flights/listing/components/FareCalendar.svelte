@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { createEventDispatcher, tick } from 'svelte';
+	import { fareCalendarStore } from '$flights/stores/fareCalendarStore.js';
 	import type {
 		CalendarDate,
 		FareDetail
 	} from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	// createEventDispatcher-triggers parent component
+	// tick-waits for svelte to update the DOM
+	import { createEventDispatcher, tick } from 'svelte';
 
+	//
 	type DayItem = {
 		key: string;
 		date: CalendarDate;
@@ -15,12 +19,12 @@
 	};
 	type MonthGroup = { key: string; label: string; days: DayItem[] };
 
-	export let fares: FareDetail[] = [];
 	export let selectedDate: CalendarDate;
-	export let loading = false;
 
 	const dispatch = createEventDispatcher<{ select: CalendarDate }>();
-
+	// both re-run whenever the store changes
+	$: loading = $fareCalendarStore.isLoading;
+	$: groups = buildGroups($fareCalendarStore.fares);
 	const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 	const MONTHS = [
 		'Jan',
@@ -63,8 +67,6 @@
 		}
 		return groups;
 	};
-
-	$: groups = buildGroups(fares);
 
 	let scroller: HTMLDivElement;
 

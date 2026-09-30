@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
-	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import {
 		fareCalendarStore,
 		resetFareCalendar,
 		setFareCalendar,
 		setFareCalendarLoading
 	} from '$flights/stores/fareCalendarStore.js';
+	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import {
 		clearQuickFilters,
 		quickFilters,
@@ -48,6 +48,8 @@
 	// the filter bar stays mounted
 	let isListLoading = false;
 	// only the latest request is allowed to update the screen
+	// so there is no race condition between the listing and the calendar
+	// even if there is a stale api call only new data is shown
 	let requestCounter = 0;
 
 	onMount(async () => {
@@ -59,22 +61,24 @@
 		await fetchScreenData();
 	});
 
+	// convert a dayjs date to the fare calendar api format
 	const toCalendarDate = (d: dayjs.Dayjs): CalendarDate => ({
 		year: d.year(),
 		month: d.month() + 1,
 		day: d.date()
 	});
-
+	// to call the fare calendar api using the current search parameters from flightSearchStore
 	const fetchFareCalendar = async () => {
 		setFareCalendarLoading();
 		const searchstore = get(flightSearchStore);
 
-		const start = dayjs();
-		const defaultEnd = start.add(15, 'day');
+		const start = dayjs(); // today
+		const defaultEnd = start.add(15, 'day'); // 15 days from today
 		const depart = dayjs(searchstore.departureDate);
 		// make sure the searched date is always inside the requested window
+		// if user selected depart date is outside calendar window, it extends the window
 		const end = depart.isAfter(defaultEnd) ? depart.add(7, 'day') : defaultEnd;
-
+		// calling api
 		const result = await getFareCalendar({
 			categoryId: 7,
 			startDate: toCalendarDate(start),
@@ -99,6 +103,8 @@
 		);
 	};
 
+	// user selected a date in the calendar - refetch the listing
+	// new api call is made only if the selected date is different from the current one
 	const handleDateSelect = (e: CustomEvent<CalendarDate>) => {
 		const { year, month, day } = e.detail;
 		if (year === selectedDate.year && month === selectedDate.month && day === selectedDate.day) {
@@ -118,11 +124,11 @@
 		fetchScreenData(true);
 	};
 
-	/**
-	 * isFilterRefetch = true  -> only the list area shows a loader
-	 * isFilterRefetch = false -> full screen loader (already set by the caller)
-	 */
+	//isFilterRefetch = true  -> only the list area shows a loader
+	//isFilterRefetch = false -> full screen loader (already set by the caller)
+
 	const fetchScreenData = async (isFilterRefetch = false) => {
+		// increment the request counter to ignore responses from older requests
 		const currentRequest = ++requestCounter;
 		isListLoading = isFilterRefetch;
 
@@ -141,7 +147,7 @@
 			countryCode: 'IN',
 			iconUrl: ''
 		});
-
+		// calls the flights api with expected request parameters
 		const result = await callGetFlightsSearchListV2({
 			src: toAirport(searchstore.source),
 			des: toAirport(searchstore.destination),
@@ -159,6 +165,7 @@
 				childCount: searchstore.children,
 				infantCount: searchstore.infants
 			},
+			// converts the selected quick-filter chips into the request's appliedSortFilter
 			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
 			is_round_trip: searchstore.isRoundTrip,
 			partnerCountry: config.partnerCountry ?? 'IN',
@@ -173,9 +180,13 @@
 		if (result.hasError()) {
 			// filters are applied and the server found nothing:
 			// stay on the listing so the user can clear the filters
-			const hasFiltersApplied = get(quickFilters).some((f) => f.isSelected);
-
+			const hasFiltersApplied = get(quickFilters).some(
+				(f: { isSelected: boolean }) => f.isSelected
+			);
+			//filters are applied and the server found nothing:
+			// stay on the listing so the user can clear the filters
 			if (hasFiltersApplied) {
+				// it keeps the chips so the user can clear them and empties the flight list
 				setNoFlights();
 				setContentLce();
 				return;
@@ -184,11 +195,12 @@
 			setErrorLce(result.error);
 			return;
 		}
-
+		// sets the api response in the store
 		setFlightListing(result.response as FlightListingResponse);
 		setContentLce();
 	};
 
+	// retry button in the error state
 	function handleRetry() {
 		setLoadingLce();
 		fetchScreenData();
@@ -198,15 +210,10 @@
 <div class="h-screen flex flex-col [&_nav.bg-secondary]:!rounded-none">
 	<ListingAppBar />
 
-	<!-- outside the lce branches, so it stays mounted while the listing reloads -->
+	<!-- fare calendar and loading indicator -->
 	{#if $fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0}
 		<div class="flex justify-center bg-[#f0f0f5]">
-			<FareCalendar
-				fares={$fareCalendarStore.fares}
-				{selectedDate}
-				loading={$fareCalendarStore.isLoading}
-				on:select={handleDateSelect}
-			/>
+			<FareCalendar {selectedDate} on:select={handleDateSelect} />
 		</div>
 	{/if}
 

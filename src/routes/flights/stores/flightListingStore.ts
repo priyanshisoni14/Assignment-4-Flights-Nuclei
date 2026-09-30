@@ -103,6 +103,7 @@ export const noFlightsMatchFilters = derived(
 // ---- helpers for the flight card (not stores) ----
 
 // the fare the card should show: the one flagged lowest, else the cheapest
+// TODO: this is a temporary workaround for the backend not returning the lowest fare
 export function getBestFare(segment: FlightSegment): PartnerFare | undefined {
 	return (
 		segment.fareList.find((f) => f.isLowestPrice) ??
