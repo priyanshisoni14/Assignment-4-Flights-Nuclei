@@ -5,6 +5,7 @@
 	import DropdownIcon from '$lib/flights-commons/icons/DropdownIcon.svelte';
 	import Tick from '$lib/flights-commons/icons/Tick.svelte';
 	import TravellerIcon from '$lib/flights-commons/icons/TravellerIcon.svelte';
+	import { saveNonStopToCache } from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import {
 		BottomSheet,
 		closeBottomSheet,
@@ -64,6 +65,27 @@
 			specialFare: s.specialFare === fare ? null : fare
 		}));
 	}
+
+	// landing only: FlightSearchBox passes true. In the Modify Search sheet the listing url
+	// must not change until Search is pressed
+	export let syncUrl = false;
+
+	// ticking the box puts the filter in the url (nonStop=true / nonStop=false).
+	// replaceState: no new history entry per tick, so Back doesn't walk through every tick
+	const handleNonStopChange = (e: Event) => {
+		if (!syncUrl) return;
+		const checked = (e.currentTarget as HTMLInputElement).checked;
+		saveNonStopToCache(checked);
+		// start from the current url so other params (like the bottom sheet's ?view=) are kept
+		const url = new URL(location.href);
+		url.searchParams.set('nonStop', String(checked));
+		NavigatorUtils.navigateTo({
+			url: url.toString(),
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
+	};
 </script>
 
 <div class="flex w-full flex-col space-y-4 rounded-xl bg-white px-4 py-3.5 md:px-5 md:py-4">
@@ -175,6 +197,7 @@
 			type="checkbox"
 			bind:checked={$flightSearchStore.nonStopOnly}
 			class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-gray-300 checked:border-primary checked:bg-primary"
+			on:change={handleNonStopChange}
 		/>
 		<Tick />
 	</span>

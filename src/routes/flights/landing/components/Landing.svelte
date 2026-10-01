@@ -6,6 +6,8 @@
 </script>
 
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import {
@@ -35,18 +37,39 @@
 		setLoadingLce();
 		// fetch the backend config and update the store
 		await fetchScreenData();
-		applyCachedSearch();
+		const hasCache = applyCachedSearch();
 		applySavedSelectionFromSessionStorage();
+		applyNonStopFromUrl(hasCache);
 	});
 	// when API fails
 	function handleRetry() {
 		setLoadingLce();
 		fetchScreenData();
 	}
-	// the last search made (e.g. edited from the listing screen) wins over the api defaults
-	function applyCachedSearch() {
+	// returns whether a cached search existed
+	function applyCachedSearch(): boolean {
 		const cached = loadSearchFromCache();
 		if (cached) flightSearchStore.set(cached);
+		return cached !== null;
+	}
+
+	// the cache (updated by landing ticks and by the listing) is the truth.
+	// the url's nonStop is only used when there is no cache yet, e.g. a shared link.
+	function applyNonStopFromUrl(hasCache: boolean) {
+		const param = $page.url.searchParams.get('nonStop');
+		if (param === null) return;
+
+		if (!hasCache) {
+			flightSearchStore.update((s) => ({ ...s, nonStopOnly: param === 'true' }));
+			return;
+		}
+		// the landing url can be stale (the listing changed non-stop after it was written):
+		// make it match the box instead of the other way round
+		if (param !== String($flightSearchStore.nonStopOnly)) {
+			const url = new URL(location.href);
+			url.searchParams.set('nonStop', String($flightSearchStore.nonStopOnly));
+			goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+		}
 	}
 	// fetch the backend config and update the store
 	const fetchScreenData = async () => {

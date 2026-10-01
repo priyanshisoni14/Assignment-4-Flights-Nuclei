@@ -59,9 +59,9 @@
 
 		// nonStop / specialFare are not in the path, so they go as query params
 		// so my landing and listing page dont differ
-		// TODO: rn nonstop and special fare are not used for sorting
 		const query = new URLSearchParams();
-		if (flightstore.nonStopOnly) query.set('nonStop', 'true');
+		if (flightstore.nonStopOnly) query.set('stop', '0');
+
 		if (flightstore.specialFare) query.set('specialFare', flightstore.specialFare);
 		const qs = query.toString() ? `?${query.toString()}` : '';
 		const url = `${base}/flights/listing/${path}${qs}`;
@@ -86,7 +86,7 @@
 	</div>
 
 	<div class="overflow-hidden">
-		<ClassTravellerRow />
+		<ClassTravellerRow syncUrl={mode === 'landing'} />
 	</div>
 
 	<Button on:click={handleSearch}>{$flightsTranslationStore('flights.search_flights')}</Button>

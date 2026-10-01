@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import {
 		fareCalendarStore,
 		resetFareCalendar,
@@ -14,10 +15,10 @@
 		quickFilters,
 		resetFlightListing,
 		setFlightListing,
-		setNoFlights
+		setNoFlights,
+		toggleQuickFilter
 	} from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
-	import { flightsTranslationStore } from '$flights/i18n.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
@@ -63,7 +64,9 @@
 	// so there is no race condition between the listing and the calendar
 	// even if there is a stale api call only new data is shown
 	let requestCounter = 0;
-
+	// the chips only arrive with the first response, so a stop=0 in the url is turned into a
+	// selected Non-stop chip once, right after that response
+	let stopFromUrlHandled = false;
 	onMount(() => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		mounted = true;
@@ -72,9 +75,9 @@
 		ensureFlightConfig();
 	});
 
-	// TODO: rn nonstop and special fare are not used for sorting
-	// so to match my flightsearch box in landing and listing page dont differ
-	$: nonStopParam = $page.url.searchParams.get('nonStop');
+	// ?stop=0 (with sort_id=1) means "non-stop only": the Non-stop chip is selected from it and
+	// the api is called with that filter. specialFare is only mirrored into the search box
+	$: nonStopParam = $page.url.searchParams.get('stop');
 	$: specialFareParam = $page.url.searchParams.get('specialFare');
 
 	// the url is the truth: copy it into flightSearchStore (and the cache), so the sheet opens
@@ -117,7 +120,7 @@
 			children: p.children,
 			infants: p.infants,
 			travelClass: p.travelClass.key,
-			nonStopOnly: nonStop === 'true',
+			nonStopOnly: nonStop === '0',
 			specialFare
 		};
 		flightSearchStore.set(next);
@@ -154,6 +157,7 @@
 		setLoadingLce();
 		if (isFirstLoad) {
 			isFirstLoad = false;
+			stopFromUrlHandled = false; // the url's stop=0 must be applied once to the new chips
 			resetFlightListing(); // clear flights + chips from any previous search
 			resetFareCalendar(); // clear fares from any previous search
 			fetchFareCalendar(p); // not awaited: a fare calendar failure must not block the listing
@@ -212,14 +216,35 @@
 		});
 	};
 
+	// keeps the url honest about the Non-stop chip: selected -> ?sort_id=1&stop=0, else both removed.
+	// replaceState so Back doesn't step through every chip tap
+	const syncStopToUrl = () => {
+		const nonStopOn = get(quickFilters).some(
+			(c: { filterType: string; filterValue: string; isSelected: boolean }) =>
+				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0' && c.isSelected
+		);
+		const url = new URL(location.href);
+		if (nonStopOn) {
+			url.searchParams.set('sort_id', '1');
+			url.searchParams.set('stop', '0');
+		} else {
+			url.searchParams.delete('sort_id');
+			url.searchParams.delete('stop');
+		}
+		if (url.href === location.href) return;
+		goto(url, { replaceState: true, noscroll: true, keepfocus: true });
+	};
+
 	// a chip was toggled: refetch from the server with the new filters
 	const handleFilterChange = () => {
+		syncStopToUrl();
 		if (params) fetchScreenData(params, true);
 	};
 
 	// "Clear filters" button in the empty state
 	const handleClearFilters = () => {
 		clearQuickFilters();
+		syncStopToUrl();
 		if (params) fetchScreenData(params, true);
 	};
 
@@ -283,6 +308,19 @@
 		}
 		// sets the api response in the store
 		setFlightListing(result.response as FlightListingResponse);
+		// url says stop=0 but the chips only exist now: select Non-stop and fetch again, so the
+		// shown flights are the non-stop api results. The full-screen loader stays up meanwhile
+		if (!stopFromUrlHandled) {
+			stopFromUrlHandled = true;
+			const nonStopChip = get(quickFilters).find(
+				(c: { filterType: string; filterValue: string }) =>
+					c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
+			);
+			if (nonStopParam === '0' && nonStopChip && !nonStopChip.isSelected) {
+				toggleQuickFilter('NO_OF_STOPS', '0');
+				return fetchScreenData(p, isFilterRefetch);
+			}
+		}
 		setContentLce();
 	};
 
@@ -301,6 +339,21 @@
 		e.stopPropagation(); // capture phase: the library's own handler never sees this click
 		openModifySheet();
 	};
+	// the url's stop param changed without the path changing (e.g. Modify Search toggled non-stop
+	// and Search was pressed): make the Non-stop chip match the url and refetch.
+	// If the chip already matches (chip tap, first load), nothing happens, so no double fetch
+	const applyStopFromUrl = (stopParam: string | null) => {
+		const chip = get(quickFilters).find(
+			(c: { filterType: string; filterValue: string }) =>
+				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
+		);
+		if (!chip) return; // chips not loaded yet: the first-load handler in fetchScreenData covers it
+		const wantOn = stopParam === '0';
+		if (chip.isSelected === wantOn) return;
+		toggleQuickFilter('NO_OF_STOPS', '0');
+		if (params) fetchScreenData(params, true);
+	};
+	$: if (mounted && params) applyStopFromUrl(nonStopParam);
 </script>
 
 <div

@@ -68,3 +68,19 @@ export const loadSearchFromCache = (): FlightSearchState | null => {
 		return null;
 	}
 };
+
+// updates only the non-stop flag of the cached search (no-op when nothing is cached yet),
+// so a landing tick survives search-city / refresh like the other selections
+export const saveNonStopToCache = (nonStopOnly: boolean) => {
+	if (!browser) return;
+	try {
+		const raw = localStorage.getItem(SEARCH_CACHE_KEY);
+		const list = raw ? JSON.parse(raw) : null;
+		if (!list?.[0]?.searchRequest) return;
+		list[0].searchRequest.nonStopOnly = nonStopOnly;
+		localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(list));
+	} catch {
+		// storage unavailable, ignore
+		return null;
+	}
+};
