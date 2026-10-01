@@ -3,6 +3,7 @@
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import ClassIcon from '$lib/flights-commons/icons/ClassIcon.svelte';
 	import DropdownIcon from '$lib/flights-commons/icons/DropdownIcon.svelte';
+	import Tick from '$lib/flights-commons/icons/Tick.svelte';
 	import TravellerIcon from '$lib/flights-commons/icons/TravellerIcon.svelte';
 	import {
 		BottomSheet,
@@ -65,7 +66,7 @@
 	}
 </script>
 
-<div class="flex w-[366px] flex-col space-y-4 rounded-xl bg-white px-4 py-3.5">
+<div class="flex w-full flex-col space-y-4 rounded-xl bg-white px-4 py-3.5 md:px-5 md:py-4">
 	<div class="flex items-stretch">
 		<button
 			type="button"
@@ -83,8 +84,8 @@
 				<p class="mb-1 text-sm leading-5 text-gray-500">
 					{$flightsTranslationStore('flights.class')}
 				</p>
-				<div class="flex items-center justify-between gap-6">
-					<p class="truncate text-lg font-semibold leading-6 text-black capitalize">
+				<div class="flex items-center justify-between gap-2 sm:gap-6">
+					<p class="truncate text-lg font-semibold capitalize leading-6 text-black">
 						{$flightSearchStore.travelClass.toLowerCase()}
 					</p>
 					<span class="flex-shrink-0 opacity-70 [&>svg]:h-3 [&>svg]:w-3.5">
@@ -94,7 +95,7 @@
 			</span>
 		</button>
 
-		<div class="mx-3 w-px self-stretch bg-gray-200" aria-hidden="true" />
+		<div class="mx-3 w-px self-stretch bg-gray-200 md:mx-5" aria-hidden="true" />
 
 		<button
 			type="button"
@@ -113,7 +114,7 @@
 					{$flightsTranslationStore('flights.travellers')}
 				</p>
 				<div class="flex items-center justify-between gap-2">
-					<p class="text-lg font-semibold leading-6 text-black">
+					<p class="truncate text-lg font-semibold leading-6 text-black">
 						{String(totalTravellers).padStart(2, '0')}
 					</p>
 					<span class="flex-shrink-0 opacity-70 [&>svg]:h-3 [&>svg]:w-3.5">
@@ -124,18 +125,24 @@
 		</button>
 	</div>
 
-	<div class="mx-[-1rem] border-t border-gray-200" />
+	<div class="-mx-4 border-t border-gray-200 md:-mx-5" />
 
-	<fieldset class="flex flex-col gap-3">
-		<legend class="text-sm leading-5 text-gray-500"
-			>{$flightsTranslationStore('flights.special_fares')}</legend
-		>
-		<div class="flex justify-evenly pt-3">
+	<!-- special fares: label on top, chips always on a single line below -->
+	<div
+		class="flex flex-col gap-3"
+		role="group"
+		aria-label={$flightsTranslationStore('flights.special_fares')}
+	>
+		<p class="text-sm leading-5 text-gray-500 md:text-base" aria-hidden="true">
+			{$flightsTranslationStore('flights.special_fares')}
+		</p>
+
+		<div class="flex min-w-0 flex-nowrap gap-1.5 pt-3 sm:gap-3 md:gap-4 lg:gap-5">
 			{#each SPECIAL_FARES as fare}
-				<div class="relative">
+				<div class="relative min-w-0 flex-auto sm:flex-none">
 					{#if fare.badge}
 						<span
-							class="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white"
+							class="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-red-500 px-2 py-0.5 text-[0.625rem] font-semibold leading-none text-white md:text-xs"
 							aria-hidden="true"
 						>
 							{fare.badge}
@@ -143,8 +150,8 @@
 					{/if}
 					<button
 						type="button"
-						class="rounded-full border px-4 py-1.5 text-sm transition-colors
-					{$flightSearchStore.specialFare === fare.name
+						class="w-full truncate whitespace-nowrap rounded-full border px-2 py-2 text-center text-[0.6875rem] transition-colors sm:px-4 sm:text-sm md:px-5 md:py-2.5 md:text-base
+				{$flightSearchStore.specialFare === fare.name
 							? 'border-primary bg-primary text-white'
 							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"
 						aria-pressed={$flightSearchStore.specialFare === fare.name}
@@ -158,36 +165,27 @@
 				</div>
 			{/each}
 		</div>
-	</fieldset>
+	</div>
 </div>
-<label class="relative flex w-fit cursor-pointer items-center gap-2 mt-2">
-	<input
-		type="checkbox"
-		bind:checked={$flightSearchStore.nonStopOnly}
-		class="peer h-5 w-5 flex-shrink-0 cursor-pointer appearance-none rounded border-2 border-gray-300 checked:border-primary checked:bg-primary"
-	/>
-	<svg
-		class="pointer-events-none absolute left-0 top-0 hidden h-5 w-5 peer-checked:block"
-		width="12"
-		height="12"
-		viewBox="0 0 12 12"
-		fill="none"
-		aria-hidden="true"
-	>
-		<path
-			d="M2 6L4.5 8.5L10 3"
-			stroke="white"
-			stroke-width="1.75"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-			transform="translate(6 6) scale(0.8) translate(-6 -6)"
+
+<!-- non-stop checkbox: input + tick share one box so the tick is centred in it -->
+<label class="mt-2 flex w-fit max-w-full cursor-pointer items-center gap-2">
+	<span class="relative flex h-5 w-5 flex-shrink-0 items-center justify-center">
+		<input
+			type="checkbox"
+			bind:checked={$flightSearchStore.nonStopOnly}
+			class="peer h-5 w-5 cursor-pointer appearance-none rounded border-2 border-gray-300 checked:border-primary checked:bg-primary"
 		/>
-	</svg>
-	<span class="text-base text-gray-500">{$flightsTranslationStore('flights.non_stop_only')}</span>
+		<Tick />
+	</span>
+	<span class="text-sm text-gray-500 sm:text-base">
+		{$flightsTranslationStore('flights.non_stop_only')}
+	</span>
 </label>
+
 <div class="traveller-sheet">
 	<BottomSheet modelId={TRAVELLER_SHEET_ID} padding="p-0">
-		<div slot="details" class="bg-[#F0F0F5}">
+		<div slot="details" class="bg-[#F0F0F5]">
 			{#key sheetInstance}
 				<div in:fly={{ y: 40, duration: 250 }}>
 					<ClassTravellerBottomSheet on:proceed={handleSelectionProceed} />

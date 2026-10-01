@@ -15,9 +15,8 @@
 </script>
 
 {#if visible}
-	<!-- 366 x 54 -->
 	<div
-		class="relative flex h-[54px] w-full max-w-[366px] items-center gap-3 rounded-lg border border-[#5DBE7E] bg-[#CBEFD7] pl-3 pr-8"
+		class="relative flex min-h-[3.375rem] w-full items-center gap-3 rounded-lg border border-[#5DBE7E] bg-[#CBEFD7] py-2 pl-3 pr-8 md:min-h-[4rem] md:gap-4 md:pl-5 md:pr-10"
 		role="button"
 		tabindex="0"
 		on:click={handleBannerClick}
@@ -25,22 +24,26 @@
 	>
 		<!-- scale icon in a green circle -->
 		<div
-			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#5DBE7E] text-white"
+			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#5DBE7E] text-white md:h-12 md:w-12"
 		>
 			<ScaleIcon />
 		</div>
 
 		<div class="min-w-0 flex-1">
-			<p class="flex items-center gap-2 text-sm font-semibold leading-5 text-[#676767]">
-				Compare and fly with :
-				<span class="flex-shrink-0 mt-1 [&>svg]:h-3 [&>svg]:w-auto" aria-hidden="true"
-					><ClearTripIcon /></span
+			<p
+				class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold leading-5 text-[#676767] md:text-base"
+			>
+				<span class="whitespace-nowrap">Compare and fly with :</span>
+				<span
+					class="mt-1 flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto md:[&>svg]:h-4"
+					aria-hidden="true"><ClearTripIcon /></span
 				>
-				<span class="flex-shrink-0 mb-1 [&>svg]:h-5 [&>svg]:w-auto" aria-hidden="true"
-					><EaseMyTripIcon /></span
+				<span
+					class="mb-1 flex-shrink-0 [&>svg]:h-5 [&>svg]:w-auto md:[&>svg]:h-6"
+					aria-hidden="true"><EaseMyTripIcon /></span
 				>
 			</p>
-			<p class="truncate pt-0.5 text-xs leading-4 text-[#676767]">
+			<p class="truncate pt-0.5 text-xs leading-4 text-[#676767] md:text-sm md:leading-5">
 				*Compare multiple airlines to find your perfect flight
 			</p>
 		</div>
@@ -48,11 +51,11 @@
 		<!-- close -->
 		<button
 			type="button"
-			class="absolute right-2 top-1.5 flex h-5 w-5 items-center justify-center"
+			class="absolute right-2 top-1.5 flex h-5 w-5 items-center justify-center md:right-3 md:top-2"
 			aria-label="Close banner"
 			on:click|stopPropagation={handleClose}
 		>
-			<svg width="8" height="8" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+			<svg class="h-2 w-2" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 				<path d="M1 1L11 11M11 1L1 11" stroke="#4CAF6A" stroke-width="2" stroke-linecap="round" />
 			</svg>
 		</button>

@@ -76,7 +76,7 @@
 	};
 </script>
 
-<div class="w-full space-y-4">
+<div class="w-full space-y-4 md:space-y-5">
 	<div class="divide-y overflow-hidden">
 		<FlightsLocationSelector />
 	</div>
@@ -85,7 +85,7 @@
 		<FlightsDateSelector />
 	</div>
 
-	<div class=" overflow-hidden">
+	<div class="overflow-hidden">
 		<ClassTravellerRow />
 	</div>
 

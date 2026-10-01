@@ -58,7 +58,7 @@
 			<div class="flex min-w-0 flex-col justify-center gap-[5px] text-white">
 				<p class="flex min-w-0 items-center text-xl font-semibold leading-6">
 					<span class="truncate">{search?.src.city ?? ''}</span>
-					<span class="mx-3 shrink-0 font-normal">→</span>
+					<span class="mx-2 shrink-0 font-normal sm:mx-3">→</span>
 					<span class="truncate">{search?.des.city ?? ''}</span>
 				</p>
 				<p class="truncate text-sm font-medium leading-5">{subtitle}</p>
@@ -68,7 +68,7 @@
 		<div slot="action" class="flex h-full items-center">
 			<button
 				type="button"
-				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#112e47]"
+				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#112e47]"
 				aria-label="Edit search"
 				on:click={handleEditClick}
 			>

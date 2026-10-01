@@ -88,50 +88,56 @@
 	};
 </script>
 
-<div class="w-[414px] max-w-full bg-[#F0F0F5] font-[Roboto,sans-serif]">
-	<!-- relative: offsetLeft of the cards is measured from this scroller -->
+<div class="w-full min-w-0 bg-[#F0F0F5] font-[Roboto,sans-serif]">
+	<!-- relative: offsetLeft of the cards is measured from this scroller.
+	     left padding lines the first card up with the page content; it bleeds to both screen edges -->
 	<div
 		bind:this={scroller}
-		class="scrollbar-hide relative flex snap-x snap-proximity gap-4 overflow-x-auto border-b border-[#E3E3E8] pb-3 pl-0 pr-2 pt-[18px]"
+		class="scrollbar-hide relative flex snap-x snap-proximity gap-4 overflow-x-auto border-b border-[#E3E3E8] pb-3 pr-4 pt-[1.125rem] sm:pr-6 md:pt-5 lg:pr-10 xl:pr-16"
 	>
 		{#if loading}
 			{#each Array(5) as _, i (i)}
-				<div class="h-[52px] w-[88px] flex-shrink-0 animate-pulse rounded-xl bg-white" />
+				<div
+					class="h-[3.25rem] w-[5.5rem] flex-shrink-0 animate-pulse rounded-xl bg-white md:h-14 md:w-28"
+				/>
 			{/each}
 		{:else}
 			{#each groups as group (group.key)}
 				<!-- sticky is limited to this group, so the next month pushes this card out -->
-				<div class="flex flex-shrink-0 first:ml-2">
-					<!-- sticky month card: 24 x 52. bg + pr-4 hide the date cards sliding underneath;
+				<div class="flex flex-shrink-0">
+					<!-- sticky month card. bg + pr-4 hide the date cards sliding underneath;
 					     the ::after strip also hides their selected underline -->
 					<div
-						class="sticky left-0 z-10 h-[52px] flex-shrink-0 bg-[#F0F0F5] pr-4 after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-[#F0F0F5]"
+						class="sticky left-0 z-10 h-[3.25rem] flex-shrink-0 bg-[#F0F0F5] pr-4 after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-[#F0F0F5] md:h-14"
 					>
-						<div class="flex h-[52px] w-[24px] items-center justify-center rounded-md bg-white">
+						<div
+							class="flex h-[3.25rem] w-6 items-center justify-center rounded-r-md bg-white md:h-14 md:w-9"
+						>
 							<span
-								class="rotate-180 text-[14px] font-medium leading-none text-[#4A9FF0] [writing-mode:vertical-rl]"
+								class="rotate-180 text-base font-semibold leading-none text-[#4A9FF0] [writing-mode:vertical-rl] md:text-lg"
 							>
 								{group.label}
 							</span>
 						</div>
 					</div>
-
 					<div class="flex gap-4">
 						{#each group.days as item (item.key)}
 							{@const isSelected = toKey(selectedDate) === item.key}
-							<!-- date card: 88 x 52 -->
+							<!-- date card -->
 							<button
 								type="button"
-								class="relative flex h-[52px] w-[88px] flex-shrink-0 snap-center flex-col items-center rounded-xl bg-white pt-[9px]"
+								class="relative flex h-[3.25rem] w-[5.5rem] flex-shrink-0 snap-center flex-col items-center rounded-xl bg-white pt-[0.5625rem] md:h-14 md:w-28 md:pt-2.5"
 								aria-pressed={isSelected}
 								aria-current={isSelected ? 'date' : undefined}
 								on:click={() => handleSelect(item.date, item.dayLabel)}
 							>
-								<span class="whitespace-nowrap text-[12px] font-medium leading-4 text-[#7B807D]">
+								<span
+									class="whitespace-nowrap text-xs font-medium leading-4 text-[#7B807D] md:text-sm"
+								>
 									{item.dayLabel}
 								</span>
 								<span
-									class="mt-px whitespace-nowrap text-[14px] font-medium leading-[18px]"
+									class="mt-px whitespace-nowrap text-sm font-medium leading-[1.125rem] md:text-base md:leading-5"
 									style="color: {item.color}"
 								>
 									{item.fareText}
@@ -139,7 +145,7 @@
 
 								{#if isSelected}
 									<span
-										class="absolute -left-2 -right-2 top-[61px] h-[3px] rounded-t-[3px] bg-[#4A9FF0]"
+										class="absolute -left-2 -right-2 top-full mt-[0.5625rem] h-[0.1875rem] rounded-t-[0.1875rem] bg-[#4A9FF0]"
 									/>
 								{/if}
 							</button>

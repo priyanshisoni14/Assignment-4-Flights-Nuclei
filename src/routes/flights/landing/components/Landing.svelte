@@ -10,8 +10,6 @@
 	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
-	import ClearTripIcon from '$lib/flights-commons/icons/cleartrip.svelte';
-	import EaseMyTripIcon from '$lib/flights-commons/icons/easemytrip.svelte';
 	import { loadSearchFromCache } from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
@@ -23,6 +21,7 @@
 	} from '@CDNA-Technologies/svelte-vitals/error-handling';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import { onMount } from 'svelte';
+	import CompareAndFlyStrip from './CompareAndFlyStrip.svelte';
 	import LandingAppBar from './LandingAppBar.svelte';
 	import PromoBanner from './PromoBanner.svelte';
 	import RecentSearches from './recent-search-flights/RecentSearches.svelte';
@@ -149,35 +148,26 @@
 	}
 </script>
 
-<div class="h-screen flex flex-col bg-base-100">
+<div
+	class="flex h-screen w-full flex-col overflow-x-hidden bg-base-100 [@supports(height:100dvh)]:h-[100dvh]"
+>
 	<LandingAppBar />
 
 	{#if $lceStore.isLoading}
-		<div class="h-screen flex flex-col justify-center">
+		<div class="flex flex-1 flex-col justify-center">
 			<PrimaryLoader />
 		</div>
 	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
-		<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		<div class="flex flex-1 flex-col">
+			<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		</div>
 	{:else if $lceStore.hasContent}
-		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5] pb-10">
-			<div class="w-full px-6 pt-4 space-y-4 md:max-w-2xl md:mx-auto">
-				<div class="flex items-center gap-1.5">
-					<p class="sub-text text-[#676767] flex items-center gap-2">
-						Compare and fly:
-						<span class="flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto" aria-hidden="true"
-							><ClearTripIcon /></span
-						>
-						<span class="flex-shrink-0 [&>svg]:h-5 [&>svg]:w-auto" aria-hidden="true"
-							><EaseMyTripIcon /></span
-						>
-					</p>
-				</div>
-
-				<FlightSearchBox />
-				<PromoBanner />
-				<UpcomingFlights />
-				<RecentSearches />
-			</div>
-		</main>
+		<div class="w-full min-w-0 space-y-4 px-4 pt-4 sm:px-6 md:space-y-5 md:pt-6 lg:px-10 xl:px-16">
+			<CompareAndFlyStrip />
+			<FlightSearchBox />
+			<PromoBanner />
+			<UpcomingFlights />
+			<RecentSearches />
+		</div>
 	{/if}
 </div>

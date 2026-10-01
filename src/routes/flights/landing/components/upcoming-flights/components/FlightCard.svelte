@@ -16,7 +16,7 @@
 
 <button
 	type="button"
-	class="flex h-[88px] w-[316px] items-center gap-3 rounded-2xl bg-white p-3 text-left"
+	class="flex min-h-[88px] w-full max-w-[316px] items-center gap-3 rounded-2xl bg-white p-3 text-left"
 	aria-label={`${from} to ${to}, ${dateRange}, ${travellers} traveller${
 		travellers > 1 ? 's' : ''
 	}, ${travelClass}, ${duration}. Double tap for details.`}
@@ -34,14 +34,14 @@
 
 	<div class="flex min-w-0 flex-1 flex-col justify-center self-stretch" aria-hidden="true">
 		<div class="flex min-w-0 items-center gap-2">
-			<p class="flex-shrink-0 truncate text-lg font-bold text-black">{from}</p>
+			<p class="min-w-0 truncate text-lg font-bold text-black">{from}</p>
 			<span class="flex-shrink-0 text-black [&>svg]:h-5 [&>svg]:w-5"><ArrowRightIcon /></span>
-			<p class="truncate text-lg font-bold text-black">{to}</p>
+			<p class="min-w-0 truncate text-lg font-bold text-black">{to}</p>
 		</div>
 
 		<p class="mt-0.5 truncate text-xs text-gray-500">{dateRange}</p>
 
-		<div class="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-xs text-black">
+		<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0 text-xs text-black">
 			<span>{$flightsTranslationStore(
 					travellers > 1 ? 'flights.traveller_count_plural' : 'flights.traveller_count',
 					{ count: travellers }

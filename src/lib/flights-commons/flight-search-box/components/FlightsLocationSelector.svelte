@@ -62,11 +62,11 @@
 	});
 </script>
 
-<div class="relative flex flex-col gap-2">
+<div class="relative flex w-full flex-col gap-2">
 	<!-- FROM -->
 	<button
 		type="button"
-		class="mb-1 flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		class="mb-1 flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left md:px-5 md:py-4"
 		aria-label={sourceLabel}
 		on:click={handleSourceClick}
 	>
@@ -105,7 +105,7 @@
 	<!-- TO -->
 	<button
 		type="button"
-		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left"
+		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left md:px-5 md:py-4"
 		aria-label={destinationLabel}
 		on:click={handleDestinationClick}
 	>
@@ -145,7 +145,7 @@
 	<!-- SWAP -->
 	<button
 		type="button"
-		class="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#4da3f0] bg-white text-[#4da3f0] transition-transform active:scale-95"
+		class="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#4da3f0] bg-white text-[#4da3f0] transition-transform active:scale-95 md:right-8"
 		aria-label={swapLabel}
 		on:click={handleSwapButtonClick}
 	>

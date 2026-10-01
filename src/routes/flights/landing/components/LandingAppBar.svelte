@@ -1,14 +1,14 @@
 <script lang="ts">
+	import {
+		flightsLanguageCode,
+		flightsTranslationStore,
+		setFlightsLanguage,
+		supportedLocales
+	} from '$flights/i18n.js';
 	import { LandingWalletCta } from '@CDNA-Technologies/svelte-vitals/cart/wallet';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import ThreeDotMenu from '@CDNA-Technologies/svelte-vitals/components/three-dot-menu';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import {
-		flightsTranslationStore,
-		flightsLanguageCode,
-		setFlightsLanguage,
-		supportedLocales
-	} from '$flights/i18n.js';
 
 	// rn no specific action is required for the back button
 	// handle the menu click rn just logs the label
@@ -39,6 +39,12 @@
 		showLanguageOptions = false;
 		close();
 	};
+	let walletBalance = 0; // default until the wallet api responds
+
+	// called by the library with the wallet response
+	const handleWalletFetched = (response: any) => {
+		walletBalance = response?.balance ?? 0; // adjust the field name to the real response shape
+	};
 </script>
 
 <!-- navbar bg override + overflow-visible so the Rewards tag can sit above the buttons -->
@@ -56,17 +62,17 @@
 		enableZIndex
 		showBackButton={true}
 	>
-		<div slot="action" class="flex items-center gap-3">
+		<div slot="action" class="flex min-w-0 items-center gap-2 sm:gap-3">
 			<!-- wallet pill: white bg, navy icon + amount (overrides the library's blue) -->
 			<div
-				class="flex h-8 items-center rounded-lg bg-white px-2.5 [&_*]:!text-[#112e47] [&_*]:font-semibold [&_svg_path]:!fill-[#112e47] [&_svg_rect]:!fill-[#112e47]"
+				class="flex h-8 min-w-0 items-center rounded-lg bg-white px-2.5 [&_*]:!text-[#112e47] [&_*]:font-semibold [&_svg_path]:!fill-[#112e47] [&_svg_rect]:!fill-[#112e47]"
 			>
-				<LandingWalletCta />
+				<LandingWalletCta onWalletResponseFetched={handleWalletFetched} />
 			</div>
 
 			<!-- offers button -->
 			<button
-				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
+				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white"
 				aria-label={$flightsTranslationStore('flights.appbar.offers')}
 				on:click={handleOffersClick}
 			>
@@ -90,7 +96,7 @@
 			<!-- rewards button with -->
 			<div class="relative">
 				<button
-					class="flex h-8 w-8 items-center justify-center rounded-lg bg-white"
+					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white"
 					aria-label={$flightsTranslationStore('flights.appbar.rewards')}
 					on:click={handleRewardsClick}
 				>

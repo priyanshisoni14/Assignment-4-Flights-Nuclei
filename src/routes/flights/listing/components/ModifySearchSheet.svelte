@@ -20,7 +20,7 @@
 
 	<!-- top sheet: hangs from the top edge and slides down -->
 	<div
-		class="fixed inset-x-0 top-0 z-50 mx-auto flex max-h-[95vh] w-full flex-col overflow-y-auto rounded-b-2xl bg-[#F0F0F5] px-6 pb-3 pt-6 md:max-w-2xl"
+		class="fixed inset-x-0 top-0 z-50 mx-auto flex max-h-[95vh] w-full flex-col overflow-y-auto rounded-b-2xl bg-[#F0F0F5] px-4 pb-3 pt-6 sm:px-6 md:max-w-2xl"
 		transition:fly={{ y: -400, duration: 250 }}
 		role="dialog"
 		aria-modal="true"
@@ -39,7 +39,7 @@
 		</div>
 
 		<!-- the exact landing component, so it matches the design and stays in sync -->
-		<div class="flex justify-center">
+		<div class="flex w-full min-w-0 justify-center">
 			<FlightSearchBox mode="modify" on:search={() => dispatch('searched')} />
 		</div>
 

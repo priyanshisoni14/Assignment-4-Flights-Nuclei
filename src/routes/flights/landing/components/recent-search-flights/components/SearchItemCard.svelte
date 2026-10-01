@@ -9,7 +9,7 @@
 
 <button
 	type="button"
-	class="flex h-[88px] w-[316px] items-center justify-between gap-3 rounded-2xl bg-white p-4 text-left"
+	class="flex min-h-[88px] w-full max-w-[316px] items-center justify-between gap-3 rounded-2xl bg-white p-4 text-left"
 	aria-label={`${from} to ${to}, ${dateRange}. Double tap to search again.`}
 >
 	<div class="flex min-w-0 items-center gap-3" aria-hidden="true">

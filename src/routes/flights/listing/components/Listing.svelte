@@ -302,7 +302,9 @@
 	};
 </script>
 
-<div class="h-screen flex flex-col [&_nav.bg-secondary]:!rounded-none">
+<div
+	class="flex h-screen w-full flex-col overflow-x-hidden [@supports(height:100dvh)]:h-[100dvh] [&_nav.bg-secondary]:!rounded-none"
+>
 	<div class:invisible={$modifySheetOpen}>
 		<ListingAppBar on:edit={openModifySheet} />
 	</div>
@@ -314,13 +316,13 @@
 
 	<!-- fare calendar and loading indicator -->
 	{#if params && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
-		<div class="flex justify-center bg-[#f0f0f5]">
+		<div class="w-full min-w-0 bg-[#f0f0f5]">
 			<FareCalendar {selectedDate} on:select={handleDateSelect} />
 		</div>
 	{/if}
 
 	{#if !params}
-		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B]">
+		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B] md:text-base">
 			This search link is not valid. Please go back and search again.
 		</p>
 	{:else if $lceStore.isLoading}
@@ -333,8 +335,12 @@
 			<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 		</div>
 	{:else if $lceStore.hasContent}
-		<main class="flex-1 overflow-y-auto w-full bg-[#f0f0f5]">
-			<div class="w-full space-y-3 px-6 pt-4 md:mx-auto md:max-w-2xl">
+		<main
+			class="min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f0f5] pb-[max(2.5rem,env(safe-area-inset-bottom))]"
+		>
+			<div
+				class="w-full min-w-0 space-y-3 px-4 pt-4 sm:px-6 md:space-y-4 md:pt-6 lg:px-10 xl:px-16"
+			>
 				<ListingFilterBar on:change={handleFilterChange} />
 				<CompareBanner />
 				{#if isListLoading}

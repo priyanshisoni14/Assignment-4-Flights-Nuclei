@@ -31,7 +31,7 @@
 </script>
 
 <div
-	class="box-border flex h-[86px] w-[366px] rounded-xl bg-white px-5 py-2.5"
+	class="box-border flex min-h-[5.375rem] w-full rounded-xl bg-white px-4 py-3 sm:px-5 md:px-6 md:py-4"
 	role="group"
 	aria-label="Travel dates"
 >
@@ -56,18 +56,18 @@
 		</span>
 	</button>
 
-	<div class="mx-8 w-px bg-gray-200" aria-hidden="true" />
+	<div class="mx-2 w-px bg-gray-200 sm:mx-6 md:mx-8" aria-hidden="true" />
 
 	<!-- RETURN: other equal half -->
 	<button
 		type="button"
-		class="min-w-0 flex-1 text-left ml-2"
+		class="ml-2 min-w-0 flex-1 text-left"
 		aria-label={returnLabel}
 		on:click={handleReturnClick}
 	>
-		<p class="text-sm leading-5 text-gray-500" aria-hidden="true">{$flightsTranslationStore(
-					'flights.return'
-				)}</p>
+		<p class="text-sm leading-5 text-gray-500" aria-hidden="true">
+			{$flightsTranslationStore('flights.return')}
+		</p>
 		{#if $flightSearchStore.isRoundTrip && $flightSearchStore.returnDate}
 			<p class="truncate text-lg font-semibold leading-6 text-black" aria-hidden="true">
 				{dayjs($flightSearchStore.returnDate).format('DD MMM')}
@@ -82,14 +82,14 @@
 			>
 				<span>{$flightsTranslationStore('flights.add_return')}</span>
 				<span
-					class="flex h-6 w-6 flex-shrink-0 items-center justify-center [&>svg]:h-6 [&>svg]:w-6 ml-2"
+					class="ml-2 flex h-6 w-6 flex-shrink-0 items-center justify-center [&>svg]:h-6 [&>svg]:w-6"
 				>
 					<AddIcon />
 				</span>
 			</div>
-			<p class="text-sm leading-5 text-gray-500" aria-hidden="true">{$flightsTranslationStore(
-					'flights.add_return_subtext'
-				)}</p>
+			<p class="text-sm leading-5 text-gray-500" aria-hidden="true">
+				{$flightsTranslationStore('flights.add_return_subtext')}
+			</p>
 		{/if}
 	</button>
 </div>
