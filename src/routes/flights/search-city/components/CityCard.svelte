@@ -11,19 +11,18 @@
 
 <button
 	type="button"
-	class="flex w-full items-center gap-4 px-6 py-4 text-left
-		transition-colors hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 active:bg-gray-50"
+	class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 active:bg-gray-50 sm:gap-4 sm:px-6 md:py-4 lg:px-10 xl:px-16"
 	aria-label={`${airport.city}, ${airport.iataCode}, ${airport.name}`}
 	on:click={handleClick}
 >
 	<span
-		class="flex h-10 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-[#F0F0F5] text-sm font-semibold text-gray-500"
+		class="flex h-10 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-[#F0F0F5] text-sm font-semibold text-gray-500 md:h-11 md:w-14 md:text-base"
 		aria-hidden="true"
 	>
 		{airport.iataCode}
 	</span>
 	<span class="min-w-0 flex-1" aria-hidden="true">
 		<span class="block truncate text-xl font-bold text-black">{airport.city}</span>
-		<span class="block truncate text-base text-gray-500">{airport.name}</span>
+		<span class="block truncate text-base text-gray-500 md:text-lg">{airport.name}</span>
 	</span>
 </button>
