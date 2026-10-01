@@ -66,12 +66,13 @@
 	onMount(() => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		mounted = true;
-		// after a hard reload the config store is empty: the class/traveller options need it
+		// after a hard reload the config store is empty: the class/traveller options need it in modify search
+		// TODO: config cache
 		ensureFlightConfig();
 	});
 
-	// $page also changes when the bottom sheet adds ?view=..., so only these two primitives are
-	// watched. A string only invalidates when its value really changes
+	// TODO: rn nonstop and special fare are not used for sorting
+	// so to match my flightsearch box in landing and listing page dont differ
 	$: nonStopParam = $page.url.searchParams.get('nonStop');
 	$: specialFareParam = $page.url.searchParams.get('specialFare');
 
@@ -83,6 +84,7 @@
 		specialFare: string | null
 	) => {
 		// the user is editing in the sheet (or came back from search-city): don't overwrite the draft
+		// dont change url yet while editing
 		if (get(modifySheetOpen)) return;
 
 		const cached = loadSearchFromCache();
@@ -246,7 +248,9 @@
 			// callGetFlightsSearchListV2 reformats these to DD-MM-YYYY itself
 			departDate: p.departDate,
 			returnDate: p.returnDate ?? '',
-			travellerClass: p.travelClass,
+			travellerClass: p.travelClass as Parameters<
+				typeof callGetFlightsSearchListV2
+			>[0]['travellerClass'],
 			passenger: { adultCount: p.adults, childCount: p.children, infantCount: p.infants },
 			// converts the selected quick-filter chips into the request's appliedSortFilter
 			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
@@ -287,9 +291,8 @@
 		if (params) fetchScreenData(params);
 	}
 
-	// the "Modify Search" button is rendered inside the library's ErrorHandling, whose event and error
-	// shape we can't rely on. So we watch the click itself: if the clicked button says "Modify",
-	// open the sheet instead of letting the library run its retry
+	// When the user clicks Modify, open your ModifySearchSheet
+	// instead of allowing the library to treat that click like its own action (such as Retry)
 	const handleErrorAreaClick = (e: MouseEvent) => {
 		const button = (e.target as HTMLElement | null)?.closest('button');
 		if (!button || !/modify/i.test(button.textContent ?? '')) return;

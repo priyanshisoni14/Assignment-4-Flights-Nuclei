@@ -86,6 +86,7 @@ export function setNoFlights() {
 
 // flights exactly as the api returned them (already filtered by the server)
 export const onwardFlights = derived(flightListingStore, ($s) => $s.onwardFlights);
+// the chips the user selected
 export const quickFilters = derived(flightListingStore, ($s) => $s.quickFilters);
 
 // badge number on the Sort & Filter button = number of chips selected

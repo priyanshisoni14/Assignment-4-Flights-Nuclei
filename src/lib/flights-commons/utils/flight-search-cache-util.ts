@@ -37,6 +37,7 @@ export const saveSearchToCache = (s: FlightSearchState) => {
 		localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify([{ searchRequest }]));
 	} catch {
 		// storage unavailable, ignore
+		return null;
 	}
 };
 

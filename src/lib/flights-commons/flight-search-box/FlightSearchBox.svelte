@@ -27,7 +27,7 @@
 
 		// label the backend expects, e.g. "Economy Class"
 		const classLabel =
-			config.travellers.find((t) => t.key === s.travelClass)?.value ?? s.travelClass;
+			config.travellers.find((t: any) => t.key === s.travelClass)?.value ?? s.travelClass;
 
 		const path = buildListingPath({
 			src: { iataCode: s.source.iataCode, city: s.source.locationName, countryCode: 'IN' },
@@ -50,6 +50,8 @@
 		saveSearchToCache(s);
 
 		// nonStop / specialFare are not in the path, so they go as query params
+		// so my landing and listing page dont differ
+		// TODO: rn nonstop and special fare are not used for sorting
 		const query = new URLSearchParams();
 		if (s.nonStopOnly) query.set('nonStop', 'true');
 		if (s.specialFare) query.set('specialFare', s.specialFare);
@@ -59,7 +61,7 @@
 		if (mode === 'modify') {
 			dispatch('search');
 			// replaceState so back from listing still goes straight to landing
-			goto(url, { replaceState: true, invalidateAll: true });
+			goto(url, { replaceState: true });
 			return;
 		}
 		NavigatorUtils.navigateTo({ url });

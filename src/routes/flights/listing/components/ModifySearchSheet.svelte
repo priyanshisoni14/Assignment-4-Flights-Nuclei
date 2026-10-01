@@ -2,17 +2,12 @@
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
-
+	import CrossButton from '$lib/flights-commons/icons/CrossButton.svelte';
 	export let open = false;
 	const dispatch = createEventDispatcher<{ close: void; searched: void }>();
 
 	const close = () => dispatch('close');
-	const onKeydown = (e: KeyboardEvent) => {
-		if (open && e.key === 'Escape') close();
-	};
 </script>
-
-<svelte:window on:keydown={onKeydown} />
 
 {#if open}
 	<!-- backdrop -->
@@ -39,14 +34,7 @@
 				aria-label="Close"
 				on:click={close}
 			>
-				<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-					<path
-						d="M2 2L14 14M14 2L2 14"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-					/>
-				</svg>
+				<CrossButton />
 			</button>
 		</div>
 

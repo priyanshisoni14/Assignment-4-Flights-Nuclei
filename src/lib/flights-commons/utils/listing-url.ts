@@ -22,6 +22,7 @@ const SEGMENT_COUNT = 15;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 // object -> "DEL/New%20Delhi/IN/BOM/..." (each segment is encoded, so spaces are safe)
+// converts object to a string that can be used as a URL path
 export const buildListingPath = (p: ListingParams): string =>
 	[
 		p.src.iataCode,
