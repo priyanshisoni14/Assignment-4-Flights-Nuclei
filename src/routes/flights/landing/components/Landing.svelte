@@ -6,10 +6,12 @@
 </script>
 
 <script lang="ts">
-	import { fetchFlightsCoreConfig } from '$flights/api/flights-api.js';
-	import { flightConfigStore } from '$flights/stores/flightConfigStore.js';
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
+	import {
+		applyConfigToStore,
+		getFlightConfig
+	} from '$lib/flights-commons/utils/flight-config-loader.js';
 	import { loadSearchFromCache } from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
@@ -48,32 +50,26 @@
 	}
 	// fetch the backend config and update the store
 	const fetchScreenData = async () => {
-		// if the config has already been fetched this session, don't touch
+		// if the config has already been loaded in this page session, don't touch
 		// source/destination again — SearchCity's live store updates (and
-		// applySavedSelectionFromSessionStorage below) are the source of truth
-		// from here on
+		// applySavedSelectionFromSessionStorage below) are the source of truth from here on
 		if (hasFetchedConfig) {
 			setContentLce();
 			return;
 		}
 
-		const configResult = await fetchFlightsCoreConfig();
+		// cache first: the api is called only when the cache is missing or expired.
+		// if the api fails, an expired cached copy is used so the screen still opens
+		const { searchRequest, error } = await getFlightConfig();
 
-		if (configResult.hasError()) {
-			setErrorLce(configResult.error);
+		if (!searchRequest && error) {
+			setErrorLce(error);
 			return;
 		}
-		//
-		const searchRequest = (configResult.response as { searchRequest?: any } | undefined)
-			?.searchRequest;
+
 		if (searchRequest) {
-			flightConfigStore.set({
-				guests: searchRequest.guests ?? [],
-				travellers: searchRequest.travellers ?? [],
-				configMap: searchRequest.configMap ?? {},
-				vendorDetails: searchRequest.vendorDetails ?? [],
-				partnerCountry: searchRequest.partnerCountry ?? 'IN'
-			});
+			applyConfigToStore(searchRequest);
+
 			// find the matched traveller class
 			const apiClass = searchRequest.travellerClass?.toUpperCase();
 			const matchedClass = searchRequest.travellers?.find((t: any) => t.key === apiClass);
@@ -84,7 +80,16 @@
 			const savedSource = sessionStorage.getItem('flights_selected_source');
 			const savedDestination = sessionStorage.getItem('flights_selected_destination');
 
-			// taking existing state and updating it with the new values
+			// a cached config can be days old: its default dates are used only while they are still today or later,
+			// otherwise the default is today + the number of days the backend asks for (0 = today)
+			const today = new Date().setHours(0, 0, 0, 0);
+			const apiDatesValid = Number(searchRequest.departDate) >= today;
+			const fallbackDepartDate = new Date();
+			fallbackDepartDate.setDate(
+				fallbackDepartDate.getDate() +
+					Number(searchRequest.configMap?.LANDING_DAYS_FROM_START_DATE ?? 0)
+			);
+
 			flightSearchStore.update((s) => ({
 				...s,
 				source: savedSource
@@ -94,7 +99,6 @@
 							iataCode: searchRequest.src.iataCode,
 							airportName: searchRequest.src.name
 					  },
-
 				destination: savedDestination
 					? JSON.parse(savedDestination)
 					: {
@@ -102,12 +106,16 @@
 							iataCode: searchRequest.des.iataCode,
 							airportName: searchRequest.des.name
 					  },
-				departureDate: new Date(Number(searchRequest.departDate)),
-				isRoundTrip: searchRequest.isRoundTrip,
-				returnDate:
-					searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
-						? new Date(Number(searchRequest.returnDate))
-						: undefined,
+				...(apiDatesValid
+					? {
+							departureDate: new Date(Number(searchRequest.departDate)),
+							isRoundTrip: searchRequest.isRoundTrip,
+							returnDate:
+								searchRequest.isRoundTrip && searchRequest.returnDate !== '0'
+									? new Date(Number(searchRequest.returnDate))
+									: undefined
+					  }
+					: { departureDate: fallbackDepartDate }),
 				adults: searchRequest.adultCount,
 				children: searchRequest.childCount,
 				infants: searchRequest.infantCount,
