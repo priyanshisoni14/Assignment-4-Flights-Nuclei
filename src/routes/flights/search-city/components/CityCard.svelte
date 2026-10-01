@@ -22,7 +22,7 @@
 		{airport.iataCode}
 	</span>
 	<span class="min-w-0 flex-1" aria-hidden="true">
-		<span class="block truncate text-xl font-bold text-black">{airport.city}</span>
+		<span class="block truncate text-lg font-bold text-black">{airport.city}</span>
 		<span class="block truncate text-base text-gray-500 md:text-lg">{airport.name}</span>
 	</span>
 </button>
