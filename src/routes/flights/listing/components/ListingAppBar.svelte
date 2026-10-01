@@ -2,17 +2,34 @@
 	import { page } from '$app/stores';
 	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
 	import { parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher<{ edit: void }>();
 
+	// month short names come from the locale files, so the header follows the language
+	const MONTH_KEYS = [
+		'flights.month.jan',
+		'flights.month.feb',
+		'flights.month.mar',
+		'flights.month.apr',
+		'flights.month.may',
+		'flights.month.jun',
+		'flights.month.jul',
+		'flights.month.aug',
+		'flights.month.sep',
+		'flights.month.oct',
+		'flights.month.nov',
+		'flights.month.dec'
+	];
+
 	// "30 Sep". The date is built from its parts, because new Date('2026-09-30')
 	// is read as UTC and can shift by a day in some timezones
-	const formatDate = (isoDate: string) => {
-		const [y, m, d] = isoDate.split('-').map(Number);
-		return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+	const formatDate = (isoDate: string, t: (key: string) => string) => {
+		const [, m, d] = isoDate.split('-').map(Number);
+		return `${d} ${t(MONTH_KEYS[m - 1])}`;
 	};
 
 	// "PREMIUM_ECONOMY" -> "Premium Economy"
@@ -25,13 +42,19 @@
 
 	// everything comes from the url, which is available on the server too,
 	// so the first paint already shows the right route
+	$: t = $flightsTranslationStore;
 	$: search = parseListingParams($page.params.params ?? '');
 	$: travellerCount = search ? search.adults + search.children + search.infants : 0;
-	$: travellerLabel = `${travellerCount} ${travellerCount === 1 ? 'Traveller' : 'Travellers'}`;
+	$: travellerLabel = t(
+		travellerCount === 1 ? 'flights.traveller_count' : 'flights.traveller_count_plural',
+		{ count: travellerCount }
+	);
 	$: subtitle = search
-		? `${formatDate(search.departDate)} | ${travellerLabel} | ${formatClass(
-				search.travelClass.key
-		  )}`
+		? t('flights.listing.subtitle', {
+				date: formatDate(search.departDate, t),
+				travellers: travellerLabel,
+				class: formatClass(search.travelClass.key)
+		  })
 		: '';
 
 	const handleBack = () => history.back();
@@ -69,7 +92,7 @@
 			<button
 				type="button"
 				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#112e47]"
-				aria-label="Edit search"
+				aria-label={$flightsTranslationStore('flights.listing.edit_search_label')}
 				on:click={handleEditClick}
 			>
 				<PencilIcon />

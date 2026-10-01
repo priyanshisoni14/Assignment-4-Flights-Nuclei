@@ -6,6 +6,7 @@
 	import RefundableIcon from '$lib/flights-commons/icons/Refundable.svelte';
 	import type { FlightSegment } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 
 	export let segment: FlightSegment;
 
@@ -15,23 +16,29 @@
 	$: otherAirlines = new Set(details.segmentAirlineInfos.map((a) => a.airlineName)).size - 1;
 	// "19:55 - 22:30"
 	$: [departTime, arriveTime] = details.airlineTime.split(' - ');
-	// "02h 35m | Non-Stop"
-	$: [duration, stopsLabel] = details.airlineDuration.split(' | ');
+	// "02h 35m | Non-Stop". the duration is ours, but the stops wording comes from the
+	// api, so it is only translated when it is one of the values we recognise
+	$: [duration, rawStops] = details.airlineDuration.split(' | ');
+	$: stopsLabel = translateStops(rawStops);
 	$: fare = getBestFare(segment);
-	$: badges = buildBadges(segment);
+	// t is passed in so the labels rebuild when the language changes
+	$: badges = buildBadges(segment, $flightsTranslationStore);
 
 	// flights are in IST (UTC+5:30 = 19800s); compare calendar days for the "+1" marker
 	const istDay = (ts: string) => Math.floor((Number(ts) + 19800) / 86400);
 	$: nextDay = istDay(details.arrivalTimestamp) > istDay(details.departTimestamp);
 
 	// design shows only the positive badges, max two
-	function buildBadges(s: FlightSegment) {
+	function buildBadges(s: FlightSegment, t: (key: string) => string) {
 		const titles = new Set(s.specialFeatures.map((f) => f.title));
-		const out: { label: string; icon: typeof RefundableIcon }[] = [];
-		if (titles.has('Refundable')) out.push({ label: 'Refundable', icon: RefundableIcon });
+const out: { label: string; icon: typeof RefundableIcon }[] = [];
+		// the api decides which badges show; only our own wording is translated
+		if (titles.has('Refundable'))
+			out.push({ label: t('flights.listing.badge_refundable'), icon: RefundableIcon });
 		if (s.hasFreeMeal || titles.has('Free Meal'))
-			out.push({ label: 'Free Meal', icon: FreeMealIcon });
-		if (titles.has('Extra Baggage')) out.push({ label: 'Extra Baggage', icon: ExtraBaggageIcon });
+			out.push({ label: t('flights.listing.badge_free_meal'), icon: FreeMealIcon });
+		if (titles.has('Extra Baggage'))
+			out.push({ label: t('flights.listing.badge_extra_baggage'), icon: ExtraBaggageIcon });
 		return out.slice(0, 2);
 	}
 
@@ -40,6 +47,23 @@
 
 	const handleCompareClick = () =>
 		NucleiLogger.logInfo('Flights', `Compare clicked: ${segment.segmentId}`);
+
+	// map the api's stops text onto our keys without matching on the label itself:
+	// non-stop / "1 stop" / "n stops" are recognised by word count and digits only
+	function translateStops(raw: string) {
+		const value = (raw ?? '').trim();
+		if (!value) return '';
+		if (/^non[-\s]?stop$/i.test(value)) {
+			return $flightsTranslationStore('flights.listing.non_stop');
+		}
+		const n = Number(value.replace(/[^\d]/g, ''));
+		if (!isNaN(n) && /\d/.test(value)) {
+			return n === 1
+				? $flightsTranslationStore('flights.listing.stops_one')
+				: $flightsTranslationStore('flights.listing.stops_many', { count: n });
+		}
+		return value;
+	}
 </script>
 
 <!-- flight card: full width, sizes step up from md -->
@@ -135,7 +159,9 @@
 					{fare.currencySymbol}{fare.fareS}
 				</p>
 			{/if}
-			<p class="text-xs leading-4 text-[#9A9A9A] md:text-sm md:leading-5">per adult</p>
+			<p class="text-xs leading-4 text-[#9A9A9A] md:text-sm md:leading-5">
+				{$flightsTranslationStore('flights.listing.per_adult')}
+			</p>
 		</div>
 	</div>
 

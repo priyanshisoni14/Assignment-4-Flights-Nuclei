@@ -3,6 +3,7 @@
 	import EaseMyTripIcon from '$lib/flights-commons/icons/easemytrip.svelte';
 	import ScaleIcon from '$lib/flights-commons/icons/scale.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 
 	let visible = true;
 
@@ -33,7 +34,9 @@
 			<p
 				class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold leading-5 text-[#676767] md:text-base"
 			>
-				<span class="whitespace-nowrap">Compare and fly with :</span>
+				<span class="whitespace-nowrap">
+					{$flightsTranslationStore('flights.listing.compare_banner')}
+				</span>
 				<span
 					class="mt-1 flex-shrink-0 [&>svg]:h-3 [&>svg]:w-auto md:[&>svg]:h-4"
 					aria-hidden="true"><ClearTripIcon /></span
@@ -44,7 +47,7 @@
 				>
 			</p>
 			<p class="truncate pt-0.5 text-xs leading-4 text-[#676767] md:text-sm md:leading-5">
-				*Compare multiple airlines to find your perfect flight
+				{$flightsTranslationStore('flights.listing.compare_banner_hint')}
 			</p>
 		</div>
 

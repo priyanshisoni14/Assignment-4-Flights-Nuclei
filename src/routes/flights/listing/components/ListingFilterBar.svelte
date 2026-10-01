@@ -6,9 +6,25 @@
 	} from '$flights/stores/flightListingStore.js';
 	import SortAndFilterIcon from '$lib/flights-commons/icons/SortAndFilterIcon.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher<{ change: void }>();
+
+	// chip labels come from the api, so translate by filterType + filterValue (never by
+	// the label text). filters we don't map fall through to the api's own string.
+	function chipLabel(filterType: string, filterValue: string, title: string) {
+		if (filterType === 'NO_OF_STOPS') {
+			const n = Number(filterValue);
+			if (n === 0) return $flightsTranslationStore('flights.listing.non_stop');
+			if (!isNaN(n)) {
+				return n === 1
+					? $flightsTranslationStore('flights.listing.stops_one')
+					: $flightsTranslationStore('flights.listing.stops_many', { count: n });
+			}
+		}
+		return title;
+	}
 
 	const handleSortFilterClick = () => NucleiLogger.logInfo('Flights', 'Sort & Filter clicked');
 
@@ -36,7 +52,7 @@
 				</span>
 			{/if}
 		</span>
-		Sort &amp; Filter
+		{$flightsTranslationStore('flights.listing.sort_filter')}
 	</button>
 
 	<!-- scrollable: only the chips swipe. negative right margin + matching padding
@@ -44,7 +60,7 @@
 	<div
 		class="scrollbar-hide -mr-4 flex min-w-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto pr-4 sm:-mr-6 sm:pr-6 lg:-mr-10 lg:pr-10 xl:-mr-16 xl:pr-16"
 		role="list"
-		aria-label="Quick filters"
+		aria-label={$flightsTranslationStore('flights.listing.quick_filters_label')}
 	>
 		{#each $quickFilters as chip (chip.filterType + chip.filterValue)}
 			<!-- svelte-ignore a11y-no-interactive-element-to-noninteractive-role -->
@@ -59,7 +75,7 @@
 				aria-pressed={chip.isSelected}
 				on:click={() => handleChipClick(chip.filterType, chip.filterValue, chip.title)}
 			>
-				{chip.title}
+				{chipLabel(chip.filterType, chip.filterValue, chip.title)}
 				{#if chip.isSelected}
 					<svg class="h-2 w-2" viewBox="0 0 12 12" fill="none" aria-hidden="true">
 						<path

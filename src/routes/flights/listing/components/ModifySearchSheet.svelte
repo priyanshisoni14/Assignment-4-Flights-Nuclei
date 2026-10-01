@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import CrossButton from '$lib/flights-commons/icons/CrossButton.svelte';
@@ -24,10 +25,12 @@
 		transition:fly={{ y: -400, duration: 250 }}
 		role="dialog"
 		aria-modal="true"
-		aria-label="Modify Search"
+		aria-label={$flightsTranslationStore('flights.listing.modify_search')}
 	>
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-xl font-bold text-black">Modify Search</h2>
+			<h2 class="text-xl font-bold text-black">
+				{$flightsTranslationStore('flights.listing.modify_search')}
+			</h2>
 			<button
 				type="button"
 				class="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#112e47]"

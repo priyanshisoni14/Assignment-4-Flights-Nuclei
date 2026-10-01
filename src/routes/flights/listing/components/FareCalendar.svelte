@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { fareCalendarStore } from '$flights/stores/fareCalendarStore.js';
 	import type {
 		CalendarDate,
@@ -24,43 +25,52 @@
 	const dispatch = createEventDispatcher<{ select: CalendarDate }>();
 	// both re-run whenever the store changes
 	$: loading = $fareCalendarStore.isLoading;
-	$: groups = buildGroups($fareCalendarStore.fares);
-	const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-	const MONTHS = [
-		'Jan',
-		'Feb',
-		'Mar',
-		'Apr',
-		'May',
-		'Jun',
-		'Jul',
-		'Aug',
-		'Sep',
-		'Oct',
-		'Nov',
-		'Dec'
+	$: groups = buildGroups($fareCalendarStore.fares, $flightsTranslationStore);
+	const DAY_KEYS = [
+		'flights.day.sun',
+		'flights.day.mon',
+		'flights.day.tue',
+		'flights.day.wed',
+		'flights.day.thu',
+		'flights.day.fri',
+		'flights.day.sat'
+	];
+	const MONTH_KEYS = [
+		'flights.month.jan',
+		'flights.month.feb',
+		'flights.month.mar',
+		'flights.month.apr',
+		'flights.month.may',
+		'flights.month.jun',
+		'flights.month.jul',
+		'flights.month.aug',
+		'flights.month.sep',
+		'flights.month.oct',
+		'flights.month.nov',
+		'flights.month.dec'
 	];
 
 	const toKey = (d: CalendarDate) => `${d.year}-${d.month}-${d.day}`;
 
 	// one group per month, so the month card can stick within its own group
-	const buildGroups = (list: FareDetail[]): MonthGroup[] => {
+	const buildGroups = (list: FareDetail[], t: (key: string) => string): MonthGroup[] => {
 		const groups: MonthGroup[] = [];
 		for (const f of list) {
 			const { year, month, day } = f.calendarDate;
 			const groupKey = `m-${year}-${month}`;
+			const monthLabel = t(MONTH_KEYS[month - 1]);
 
 			let group = groups[groups.length - 1];
 			if (!group || group.key !== groupKey) {
-				group = { key: groupKey, label: MONTHS[month - 1], days: [] };
+				group = { key: groupKey, label: monthLabel, days: [] };
 				groups.push(group);
 			}
 
-			const weekday = DAYS[new Date(year, month - 1, day).getDay()];
+			const weekday = t(DAY_KEYS[new Date(year, month - 1, day).getDay()]);
 			group.days.push({
 				key: toKey(f.calendarDate),
 				date: f.calendarDate,
-				dayLabel: `${weekday}, ${day} ${MONTHS[month - 1]}`,
+				dayLabel: `${weekday}, ${day} ${monthLabel}`,
 				fareText: f.cheapestFareString || (f.cheapestFare > 0 ? `₹ ${f.cheapestFare}` : '--'),
 				color: f.colorCode || '#111111'
 			});

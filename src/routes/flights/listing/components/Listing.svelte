@@ -17,6 +17,7 @@
 		setNoFlights
 	} from '$flights/stores/flightListingStore.js';
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
@@ -323,7 +324,7 @@
 
 	{#if !params}
 		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B] md:text-base">
-			This search link is not valid. Please go back and search again.
+			{$flightsTranslationStore('flights.listing.invalid_link')}
 		</p>
 	{:else if $lceStore.isLoading}
 		<div class="flex flex-1 flex-col justify-center">
