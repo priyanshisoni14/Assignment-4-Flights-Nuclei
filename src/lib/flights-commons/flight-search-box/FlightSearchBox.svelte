@@ -21,40 +21,48 @@
 	export let mode: 'landing' | 'modify' = 'landing';
 	const dispatch = createEventDispatcher<{ search: void }>();
 	const handleSearch = () => {
-		const s = get(flightSearchStore);
+		const flightstore = get(flightSearchStore);
 		const config = get(flightConfigStore);
-		NucleiLogger.logInfo('Flights', 'Search Flights clicked', s);
+		NucleiLogger.logInfo('Flights', 'Search Flights clicked', flightstore);
 
 		// label the backend expects, e.g. "Economy Class"
 		const classLabel =
-			config.travellers.find((t: any) => t.key === s.travelClass)?.value ?? s.travelClass;
+			config.travellers.find((t: any) => t.key === flightstore.travelClass)?.value ??
+			flightstore.travelClass;
 
 		const path = buildListingPath({
-			src: { iataCode: s.source.iataCode, city: s.source.locationName, countryCode: 'IN' },
-			des: {
-				iataCode: s.destination.iataCode,
-				city: s.destination.locationName,
+			src: {
+				iataCode: flightstore.source.iataCode,
+				city: flightstore.source.locationName,
 				countryCode: 'IN'
 			},
-			departDate: dayjs(s.departureDate).format('YYYY-MM-DD'),
-			returnDate: s.isRoundTrip && s.returnDate ? dayjs(s.returnDate).format('YYYY-MM-DD') : null,
+			des: {
+				iataCode: flightstore.destination.iataCode,
+				city: flightstore.destination.locationName,
+				countryCode: 'IN'
+			},
+			departDate: dayjs(flightstore.departureDate).format('YYYY-MM-DD'),
+			returnDate:
+				flightstore.isRoundTrip && flightstore.returnDate
+					? dayjs(flightstore.returnDate).format('YYYY-MM-DD')
+					: null,
 			partnerCountry: config.partnerCountry || 'IN',
-			adults: s.adults,
-			children: s.children,
-			infants: s.infants,
-			travelClass: { key: s.travelClass, value: classLabel },
+			adults: flightstore.adults,
+			children: flightstore.children,
+			infants: flightstore.infants,
+			travelClass: { key: flightstore.travelClass, value: classLabel },
 			fareType: 'regular'
 		});
 
 		// keep the selection so going back to landing shows it
-		saveSearchToCache(s);
+		saveSearchToCache(flightstore);
 
 		// nonStop / specialFare are not in the path, so they go as query params
 		// so my landing and listing page dont differ
 		// TODO: rn nonstop and special fare are not used for sorting
 		const query = new URLSearchParams();
-		if (s.nonStopOnly) query.set('nonStop', 'true');
-		if (s.specialFare) query.set('specialFare', s.specialFare);
+		if (flightstore.nonStopOnly) query.set('nonStop', 'true');
+		if (flightstore.specialFare) query.set('specialFare', flightstore.specialFare);
 		const qs = query.toString() ? `?${query.toString()}` : '';
 		const url = `${base}/flights/listing/${path}${qs}`;
 
