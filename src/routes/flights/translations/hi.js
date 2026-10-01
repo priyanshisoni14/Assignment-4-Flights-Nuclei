@@ -93,4 +93,7 @@ export default {
 	'flights.month.oct': 'अक्टू',
 	'flights.month.nov': 'नव',
 	'flights.month.dec': 'दिस',
+
+	'flights.listing.select': 'चुनें',
+    'flights.listing.show_less': 'कम दिखाएं',
 };

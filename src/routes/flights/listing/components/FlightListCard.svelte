@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { getBestFare } from '$flights/stores/flightListingStore.js';
 	import BookMark from '$lib/flights-commons/icons/Bookmark.svelte';
 	import ExtraBaggageIcon from '$lib/flights-commons/icons/ExtraBaggage.svelte';
 	import FreeMealIcon from '$lib/flights-commons/icons/FreeMeal.svelte';
 	import RefundableIcon from '$lib/flights-commons/icons/Refundable.svelte';
+	import TagIcon from '$lib/flights-commons/icons/TagIcon.svelte';
 	import type { FlightSegment } from '$lib/flights-commons/messages/flights-listing-msg.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import { flightsTranslationStore } from '$flights/i18n.js';
+	import { slide } from 'svelte/transition';
 
 	export let segment: FlightSegment;
 
@@ -31,7 +33,7 @@
 	// design shows only the positive badges, max two
 	function buildBadges(s: FlightSegment, t: (key: string) => string) {
 		const titles = new Set(s.specialFeatures.map((f) => f.title));
-const out: { label: string; icon: typeof RefundableIcon }[] = [];
+		const out: { label: string; icon: typeof RefundableIcon }[] = [];
 		// the api decides which badges show; only our own wording is translated
 		if (titles.has('Refundable'))
 			out.push({ label: t('flights.listing.badge_refundable'), icon: RefundableIcon });
@@ -41,9 +43,24 @@ const out: { label: string; icon: typeof RefundableIcon }[] = [];
 			out.push({ label: t('flights.listing.badge_extra_baggage'), icon: ExtraBaggageIcon });
 		return out.slice(0, 2);
 	}
+	let expanded = false;
 
-	const handleCardClick = () =>
-		NucleiLogger.logInfo('Flights', `Flight card clicked: ${segment.segmentId}`);
+	// one row per booking partner, cheapest first
+	$: partnerFares = [...segment.fareList].sort((a, b) => a.fare - b.fare);
+	$: lowestFare = partnerFares[0]?.fare;
+	// the tag marks the cheapest vendor only when it is really cheaper than another one
+	$: hasPriceGap = partnerFares.length > 1 && partnerFares.some((f) => f.fare > lowestFare);
+
+	const toggleExpanded = () => {
+		expanded = !expanded;
+		NucleiLogger.logInfo(
+			'Flights',
+			`Flight card ${expanded ? 'expanded' : 'collapsed'}: ${segment.segmentId}`
+		);
+	};
+
+	const handleSelectFare = (fareId: string, partnerName: string) =>
+		NucleiLogger.logInfo('Flights', `Select clicked: ${partnerName} (${fareId})`);
 
 	const handleCompareClick = () =>
 		NucleiLogger.logInfo('Flights', `Compare clicked: ${segment.segmentId}`);
@@ -68,11 +85,13 @@ const out: { label: string; icon: typeof RefundableIcon }[] = [];
 
 <!-- flight card: full width, sizes step up from md -->
 <div
-	class="w-full cursor-pointer overflow-hidden rounded-[0.625rem] bg-white"
+	class="w-full cursor-pointer overflow-hidden rounded-[0.625rem] border-2 transition-colors
+	{expanded ? 'border-[#4A9FF0] bg-[#F0F8FF]' : 'border-transparent bg-white'}"
 	role="button"
 	tabindex="0"
-	on:click={handleCardClick}
-	on:keydown={(e) => e.target === e.currentTarget && e.key === 'Enter' && handleCardClick()}
+	aria-expanded={expanded}
+	on:click={toggleExpanded}
+	on:keydown={(e) => e.target === e.currentTarget && e.key === 'Enter' && toggleExpanded()}
 >
 	<!-- header: airline + badges (last badge runs to the card edge) -->
 	<div
@@ -165,8 +184,47 @@ const out: { label: string; icon: typeof RefundableIcon }[] = [];
 		</div>
 	</div>
 
-	<!-- savings strip: only when the API sends savingsText -->
-	{#if segment.savingsText}
+	{#if expanded}
+		<!-- partner list: one row per vendor, cheapest first -->
+		<div
+			class="mx-3 mb-3 mt-4 overflow-hidden rounded-[0.625rem] bg-white md:mx-5 md:mb-4"
+			transition:slide={{ duration: 200 }}
+		>
+			{#each partnerFares as pf (pf.fareId)}
+				{@const isBest = hasPriceGap && pf.fare === lowestFare}
+				<div class="flex items-center gap-3 border-b border-[#E5E5E5] px-4 py-3 md:px-5">
+					{#if pf.partnerIconUrl}
+						<img src={pf.partnerIconUrl} alt="" class="h-5 w-5 shrink-0 rounded object-contain" />
+					{/if}
+					<span class="min-w-0 flex-1 truncate text-base text-[#111] md:text-lg">
+						{pf.partnerName}
+					</span>
+					<span
+						class="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-lg font-medium md:text-xl
+					{isBest ? 'text-[#52B36F]' : 'text-[#111]'}"
+					>
+						{#if isBest}<TagIcon />{/if}
+						{pf.currencySymbol}{pf.fareS}
+					</span>
+					<button
+						type="button"
+						class="h-9 w-[5.5rem] shrink-0 rounded-lg border border-[#4A9FF0] bg-white text-base font-medium text-[#4A9FF0] md:h-9 md:w-28"
+						on:click|stopPropagation={() => handleSelectFare(pf.fareId, pf.partnerName)}
+					>
+						{$flightsTranslationStore('flights.listing.select')}
+					</button>
+				</div>
+			{/each}
+			<button
+				type="button"
+				class="w-full py-3 text-center text-base font-medium text-[#4A9FF0]"
+				on:click|stopPropagation={toggleExpanded}
+			>
+				{$flightsTranslationStore('flights.listing.show_less')}
+			</button>
+		</div>
+	{:else if segment.savingsText}
+		<!-- savings strip: only when collapsed and the API sends savingsText -->
 		<button
 			type="button"
 			class="mb-3 ml-14 mt-3.5 flex h-6 w-[calc(100%-3.5rem)] min-w-0 items-center justify-end gap-1.5 bg-gradient-to-r from-transparent to-[#E8F7EC] pr-4 text-sm font-semibold text-[#52B36F] md:mb-4 md:ml-20 md:mt-4 md:h-7 md:w-[calc(100%-5rem)] md:pr-5 md:text-base"

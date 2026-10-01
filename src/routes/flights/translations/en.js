@@ -104,4 +104,7 @@ export default {
 	'flights.month.oct': 'Oct',
 	'flights.month.nov': 'Nov',
 	'flights.month.dec': 'Dec',
+
+	'flights.listing.select': 'Select',
+    'flights.listing.show_less': 'Show less',
 };
