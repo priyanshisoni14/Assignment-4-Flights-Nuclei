@@ -1,10 +1,5 @@
 <script lang="ts">
-	import {
-		flightsLanguageCode,
-		flightsTranslationStore,
-		setFlightsLanguage,
-		supportedLocales
-	} from '$flights/i18n.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { LandingWalletCta } from '@CDNA-Technologies/svelte-vitals/cart/wallet';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import ThreeDotMenu from '@CDNA-Technologies/svelte-vitals/components/three-dot-menu';
@@ -20,25 +15,6 @@
 	const handleOffersClick = () => NucleiLogger.logInfo('Flights', 'Offers clicked');
 	const handleRewardsClick = () => NucleiLogger.logInfo('Flights', 'Rewards clicked');
 
-	// display names for the language sub-list — add an entry whenever a new
-	// locale is added to translations.js
-	const LOCALE_LABELS: Record<string, string> = {
-		en: 'English',
-		hi: 'हिन्दी'
-	};
-
-	let showLanguageOptions = false;
-
-	const toggleLanguageOptions = () => {
-		showLanguageOptions = !showLanguageOptions;
-	};
-
-	const handleLanguageSelect = (locale: string, close: () => void) => {
-		setFlightsLanguage(locale);
-		NucleiLogger.logInfo('Flights', `Language changed to ${locale}`);
-		showLanguageOptions = false;
-		close();
-	};
 	let walletBalance = 0; // default until the wallet api responds
 	let walletFetched = false; // false -> show our fallback pill instead of the library's
 
@@ -177,36 +153,6 @@
 					>
 						{$flightsTranslationStore('flights.appbar.help')}
 					</li>
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
-					<li
-						on:click={toggleLanguageOptions}
-						role="menuitem"
-						tabindex="0"
-						aria-expanded={showLanguageOptions}
-						class="flex items-center justify-between border-t p-3"
-					>
-						<span>{$flightsTranslationStore('flights.appbar.language')}</span>
-						<span class="text-sm text-gray-500"
-							>{LOCALE_LABELS[$flightsLanguageCode] ?? $flightsLanguageCode}</span
-						>
-					</li>
-					{#if showLanguageOptions}
-						{#each supportedLocales as locale}
-							<!-- svelte-ignore a11y-click-events-have-key-events -->
-							<li
-								on:click={() => handleLanguageSelect(locale, closeDropDown)}
-								role="menuitem"
-								tabindex="0"
-								aria-current={$flightsLanguageCode === locale}
-								class="flex items-center justify-between border-t bg-gray-50 py-3 pl-6 pr-3 text-sm"
-							>
-								<span>{LOCALE_LABELS[locale] ?? locale}</span>
-								{#if $flightsLanguageCode === locale}
-									<span aria-hidden="true">✓</span>
-								{/if}
-							</li>
-						{/each}
-					{/if}
 				</ThreeDotMenu>
 			</div>
 		</div>
