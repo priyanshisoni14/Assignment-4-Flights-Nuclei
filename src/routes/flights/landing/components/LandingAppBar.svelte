@@ -40,10 +40,12 @@
 		close();
 	};
 	let walletBalance = 0; // default until the wallet api responds
+	let walletFetched = false; // false -> show our fallback pill instead of the library's
 
 	// called by the library with the wallet response
 	const handleWalletFetched = (response: any) => {
 		walletBalance = response?.balance ?? 0; // adjust the field name to the real response shape
+		walletFetched = true;
 	};
 </script>
 
@@ -63,12 +65,38 @@
 		showBackButton={true}
 	>
 		<div slot="action" class="flex min-w-0 items-center gap-2 sm:gap-3">
-			<!-- wallet pill: white bg, navy icon + amount (overrides the library's blue) -->
+			<!-- wallet pill: the library cta stays mounted so it can fetch, but is hidden until it
+     responds. Until then (or if wallet is disabled / the call fails) a default pill shows -->
 			<div
-				class="flex h-8 min-w-0 items-center rounded-lg bg-white px-2.5 [&_*]:!text-[#112e47] [&_*]:font-semibold [&_svg_path]:!fill-[#112e47] [&_svg_rect]:!fill-[#112e47]"
+				class="{walletFetched
+					? 'flex'
+					: 'hidden'} h-8 min-w-0 items-center rounded-lg bg-white px-2.5 [&_*]:!text-[#112e47] [&_*]:font-semibold [&_svg_path]:!fill-[#112e47] [&_svg_rect]:!fill-[#112e47]"
 			>
 				<LandingWalletCta onWalletResponseFetched={handleWalletFetched} />
 			</div>
+
+			{#if !walletFetched}
+				<div
+					class="flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-white px-2.5 text-sm font-semibold text-[#112e47]"
+					aria-label={$flightsTranslationStore('flights.appbar.wallet')}
+				>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<rect x="2.5" y="5.5" width="19" height="14" rx="2.5" fill="#112E47" />
+						<rect
+							x="14"
+							y="10"
+							width="9"
+							height="5.5"
+							rx="1.5"
+							fill="#112E47"
+							stroke="#fff"
+							stroke-width="1.4"
+						/>
+						<circle cx="17.2" cy="12.75" r="1" fill="#fff" />
+					</svg>
+					<span>₹{walletBalance}</span>
+				</div>
+			{/if}
 
 			<!-- offers button -->
 			<button

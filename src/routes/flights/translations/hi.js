@@ -104,4 +104,5 @@ export default {
 		// FlightsCalendar
 	'flights.select_departure_date': 'प्रस्थान की तारीख चुनें',
 	'flights.select_return_date': 'वापसी की तारीख चुनें',
+	'flights.appbar.wallet': 'वॉलेट',
 };

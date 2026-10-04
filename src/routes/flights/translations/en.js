@@ -115,4 +115,5 @@ export default {
 		// FlightsCalendar
 	'flights.select_departure_date': 'Select Departure Date',
 	'flights.select_return_date': 'Select Return Date',
+	'flights.appbar.wallet': 'Wallet',
 };
