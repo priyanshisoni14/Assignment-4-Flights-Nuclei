@@ -37,7 +37,6 @@ export const saveSearchToCache = (s: FlightSearchState) => {
 		localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify([{ searchRequest }]));
 	} catch {
 		// storage unavailable, ignore
-		return null;
 	}
 };
 
@@ -47,16 +46,27 @@ export const loadSearchFromCache = (): FlightSearchState | null => {
 		const raw = localStorage.getItem(SEARCH_CACHE_KEY);
 		const r: CachedSearchRequest | undefined = raw ? JSON.parse(raw)?.[0]?.searchRequest : undefined;
 		if (!r?.source?.iataCode || !r?.destination?.iataCode) return null;
+
 		const depart = new Date(Number(r.departDate));
 		// a cached date in the past is useless: fall back to today
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
+		const departureDate = depart.getTime() >= today.getTime() ? depart : new Date();
+
+		// a cached return before the (possibly moved) departure is dropped, together with the
+		// round-trip flag: otherwise the listing url would carry a return earlier than the departure
+		const cachedReturn = r.returnDate !== '0' ? new Date(Number(r.returnDate)) : undefined;
+		const departDay = new Date(departureDate);
+		departDay.setHours(0, 0, 0, 0);
+		const returnDate =
+			cachedReturn && cachedReturn.getTime() >= departDay.getTime() ? cachedReturn : undefined;
+
 		return {
 			source: r.source,
 			destination: r.destination,
-			departureDate: depart.getTime() >= today.getTime() ? depart : new Date(),
-			returnDate: r.returnDate !== '0' ? new Date(Number(r.returnDate)) : undefined,
-			isRoundTrip: r.isRoundTrip,
+			departureDate,
+			returnDate,
+			isRoundTrip: r.isRoundTrip && returnDate !== undefined,
 			adults: r.adultCount,
 			children: r.childCount,
 			infants: r.infantCount,
@@ -81,6 +91,5 @@ export const saveNonStopToCache = (nonStopOnly: boolean) => {
 		localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(list));
 	} catch {
 		// storage unavailable, ignore
-		return null;
 	}
 };

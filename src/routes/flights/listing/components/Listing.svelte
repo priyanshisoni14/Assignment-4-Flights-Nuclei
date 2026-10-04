@@ -3,7 +3,6 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
-	import { flightsTranslationStore } from '$flights/i18n.js';
 	import {
 		fareCalendarStore,
 		resetFareCalendar,
@@ -12,6 +11,7 @@
 	} from '$flights/stores/fareCalendarStore.js';
 	import {
 		clearQuickFilters,
+		isRoundTripListing,
 		quickFilters,
 		resetFlightListing,
 		setFlightListing,
@@ -47,7 +47,9 @@
 	import ListingAppBar from './ListingAppBar.svelte';
 	import ListingFilterBar from './ListingFilterBar.svelte';
 	import ModifySearchSheet from './ModifySearchSheet.svelte';
-
+	import RoundTripFooter from './RoundTripFooter.svelte';
+	import RoundTripListing from './RoundTripListing.svelte';
+	import RoundTripTabs from './RoundTripTabs.svelte';
 	// the url is the single source of truth for the search, so a hard reload keeps everything.
 	// routeKey is a string, so params is only rebuilt when the url segments really change
 	$: routeKey = $page.params.params ?? '';
@@ -64,6 +66,8 @@
 	// so there is no race condition between the listing and the calendar
 	// even if there is a stale api call only new data is shown
 	let requestCounter = 0;
+	// round trip: which direction is in front (tabs + the wide column)
+	let activeLeg: 'onward' | 'return' = 'onward';
 	// the chips only arrive with the first response, so a stop=0 in the url is turned into a
 	// selected Non-stop chip once, right after that response
 	let stopFromUrlHandled = false;
@@ -211,7 +215,10 @@
 			return;
 		}
 		const departDate = dayjs(new Date(year, month - 1, day)).format('YYYY-MM-DD');
-		goto(`${base}/flights/listing/${buildListingPath({ ...params, departDate })}`, {
+		// a return date before the new departure would be invalid: move it to the same day
+		const returnDate =
+			params.returnDate && params.returnDate < departDate ? departDate : params.returnDate;
+		goto(`${base}/flights/listing/${buildListingPath({ ...params, departDate, returnDate })}`, {
 			replaceState: true
 		});
 	};
@@ -368,8 +375,8 @@
 		on:searched={handleModifySearched}
 	/>
 
-	<!-- fare calendar and loading indicator -->
-	{#if params && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
+	<!-- fare calendar: one way only. on a round trip, picking a date here would break the return date -->
+	{#if params && !params.returnDate && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
 		<div class="w-full min-w-0 bg-[#f0f0f5]">
 			<FareCalendar {selectedDate} on:select={handleDateSelect} />
 		</div>
@@ -377,7 +384,7 @@
 
 	{#if !params}
 		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B] md:text-base">
-			{$flightsTranslationStore('flights.listing.invalid_link')}
+			This search link is not valid. Please go back and search again.
 		</p>
 	{:else if $lceStore.isLoading}
 		<div class="flex flex-1 flex-col justify-center">
@@ -389,6 +396,10 @@
 			<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
 		</div>
 	{:else if $lceStore.hasContent}
+		{#if $isRoundTripListing}
+			<RoundTripTabs {activeLeg} on:change={(e) => (activeLeg = e.detail)} />
+		{/if}
+
 		<main
 			class="min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f0f5] pb-[max(2.5rem,env(safe-area-inset-bottom))]"
 		>
@@ -401,10 +412,16 @@
 					<div class="flex justify-center py-10">
 						<PrimaryLoader />
 					</div>
+				{:else if $isRoundTripListing}
+					<RoundTripListing {activeLeg} on:legchange={(e) => (activeLeg = e.detail)} />
 				{:else}
 					<FlightListing on:clear={handleClearFilters} />
 				{/if}
 			</div>
 		</main>
+
+		{#if $isRoundTripListing}
+			<RoundTripFooter />
+		{/if}
 	{/if}
 </div>

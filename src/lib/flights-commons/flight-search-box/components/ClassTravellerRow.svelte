@@ -172,7 +172,7 @@
 					{/if}
 					<button
 						type="button"
-						class="w-full truncate whitespace-nowrap rounded-full border px-2 py-2 text-center text-[0.6875rem] transition-colors sm:px-4 sm:text-sm md:px-5 md:py-2.5 md:text-base
+						class="w-full truncate whitespace-nowrap rounded-full border px-2 py-2 text-center text-[0.78125rem] transition-colors sm:px-4 sm:text-sm md:px-5 md:py-2.5 md:text-base
 				{$flightSearchStore.specialFare === fare.name
 							? 'border-primary bg-primary text-white'
 							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"

@@ -11,7 +11,6 @@
 	import { fly } from 'svelte/transition';
 	import type { Airport } from '../types.js';
 	import CityCard from './CityCard.svelte';
-
 	const RECENT_SEARCHES_KEY = 'flights_recent_airports';
 	const MAX_RECENT_SEARCHES = 6;
 	let searchError = false;
@@ -140,9 +139,7 @@
 		<label class="block">
 			<span class="sr-only">Search for a city or airport</span>
 			<div
-				class="overflow-hidden rounded-2xl border-2 bg-white shadow-md transition-colors duration-150 {sameCityError
-					? 'border-red-500'
-					: 'border-transparent'}"
+				class="overflow-hidden rounded-2xl border-2 bg-white shadow-md transition-colors duration-150 border-transparent"
 			>
 				<SearchBar
 					placeholder={$flightsTranslationStore('flights.enter_city_placeholder')}
@@ -158,7 +155,11 @@
 
 		{#if sameCityError}
 			<!-- role="alert" so screen readers announce it, like the old alert did -->
-			<p class="px-1 pt-2 text-sm font-medium text-red-600 md:text-base" role="alert">
+			<!-- Enters from the right (+15px) and exits to the left (-15px) rapidly -->
+			<p
+				class="px-1 pt-2 text-sm font-medium text-red-600 md:text-base inline-block shake"
+				role="alert"
+			>
 				{sameCityError}
 			</p>
 		{/if}
@@ -174,7 +175,7 @@
 
 		{#if searchError}
 			<div
-				class="flex w-full flex-col items-center gap-2 px-4 py-8 text-center sm:px-6 lg:px-10 xl:px-16"
+				class="flex w-full flex-col items-center gap-2 px-4 py-8 text-center sm:px-6 lg:px-10 xl:px-16 shake"
 				role="alert"
 			>
 				<span class="text-sm text-gray-600 md:text-base">
@@ -258,3 +259,28 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.shake {
+		animation: shake 0.35s ease-in-out;
+	}
+
+	@keyframes shake {
+		0%,
+		100% {
+			transform: translateX(0);
+		}
+		20% {
+			transform: translateX(-6px);
+		}
+		40% {
+			transform: translateX(6px);
+		}
+		60% {
+			transform: translateX(-4px);
+		}
+		80% {
+			transform: translateX(4px);
+		}
+	}
+</style>

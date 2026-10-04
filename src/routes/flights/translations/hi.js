@@ -96,4 +96,12 @@ export default {
 
 	'flights.listing.select': 'चुनें',
     'flights.listing.show_less': 'कम दिखाएं',
+
+	'flights.departure_date': 'प्रस्थान की तारीख',
+    'flights.return_date': 'वापसी की तारीख',
+    'flights.remove_return': 'वापसी की तारीख हटाएँ',
+
+		// FlightsCalendar
+	'flights.select_departure_date': 'प्रस्थान की तारीख चुनें',
+	'flights.select_return_date': 'वापसी की तारीख चुनें',
 };

@@ -2,34 +2,17 @@
 	import { page } from '$app/stores';
 	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
 	import { parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
-	import { flightsTranslationStore } from '$flights/i18n.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher<{ edit: void }>();
 
-	// month short names come from the locale files, so the header follows the language
-	const MONTH_KEYS = [
-		'flights.month.jan',
-		'flights.month.feb',
-		'flights.month.mar',
-		'flights.month.apr',
-		'flights.month.may',
-		'flights.month.jun',
-		'flights.month.jul',
-		'flights.month.aug',
-		'flights.month.sep',
-		'flights.month.oct',
-		'flights.month.nov',
-		'flights.month.dec'
-	];
-
 	// "30 Sep". The date is built from its parts, because new Date('2026-09-30')
 	// is read as UTC and can shift by a day in some timezones
-	const formatDate = (isoDate: string, t: (key: string) => string) => {
-		const [, m, d] = isoDate.split('-').map(Number);
-		return `${d} ${t(MONTH_KEYS[m - 1])}`;
+	const formatDate = (isoDate: string) => {
+		const [y, m, d] = isoDate.split('-').map(Number);
+		return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 	};
 
 	// "PREMIUM_ECONOMY" -> "Premium Economy"
@@ -42,19 +25,18 @@
 
 	// everything comes from the url, which is available on the server too,
 	// so the first paint already shows the right route
-	$: t = $flightsTranslationStore;
 	$: search = parseListingParams($page.params.params ?? '');
 	$: travellerCount = search ? search.adults + search.children + search.infants : 0;
-	$: travellerLabel = t(
-		travellerCount === 1 ? 'flights.traveller_count' : 'flights.traveller_count_plural',
-		{ count: travellerCount }
-	);
+	$: travellerLabel = `${travellerCount} ${travellerCount === 1 ? 'Traveller' : 'Travellers'}`;
+	$: isRoundTrip = !!search?.returnDate;
+	// "4 Oct - 7 Oct" for a round trip, "4 Oct" for one way
+	$: dates = search
+		? search.returnDate
+			? `${formatDate(search.departDate)} - ${formatDate(search.returnDate)}`
+			: formatDate(search.departDate)
+		: '';
 	$: subtitle = search
-		? t('flights.listing.subtitle', {
-				date: formatDate(search.departDate, t),
-				travellers: travellerLabel,
-				class: formatClass(search.travelClass.key)
-		  })
+		? `${dates} | ${travellerLabel} | ${formatClass(search.travelClass.key)}`
 		: '';
 
 	const handleBack = () => history.back();
@@ -78,11 +60,19 @@
 		<!-- both lines live in the title slot, so the back button and pencil
 		     centre against the whole two-line block -->
 		<svelte:fragment slot="title">
-			<div class="flex min-w-0 flex-col justify-center gap-[5px] text-white">
-				<p class="flex min-w-0 items-center text-xl font-semibold leading-6">
-					<span class="truncate">{search?.src.city ?? ''}</span>
-					<span class="mx-2 shrink-0 font-normal sm:mx-3">→</span>
-					<span class="truncate">{search?.des.city ?? ''}</span>
+			<div class="flex min-w-0 flex-col justify-center gap-[0.3125rem] text-white">
+				<p
+					class="flex min-w-0 items-center font-semibold leading-6 {isRoundTrip
+						? 'text-base md:text-xl'
+						: 'text-xl'}"
+				>
+					<span class="truncate">
+						{isRoundTrip ? `(${search?.src.iataCode}) ` : ''}{search?.src.city ?? ''}
+					</span>
+					<span class="mx-2 shrink-0 font-normal md:mx-3">{isRoundTrip ? '⇄' : '→'}</span>
+					<span class="truncate">
+						{isRoundTrip ? `(${search?.des.iataCode}) ` : ''}{search?.des.city ?? ''}
+					</span>
 				</p>
 				<p class="truncate text-sm font-medium leading-5">{subtitle}</p>
 			</div>
@@ -91,8 +81,8 @@
 		<div slot="action" class="flex h-full items-center">
 			<button
 				type="button"
-				class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#112e47]"
-				aria-label={$flightsTranslationStore('flights.listing.edit_search_label')}
+				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#112e47]"
+				aria-label="Edit search"
 				on:click={handleEditClick}
 			>
 				<PencilIcon />
