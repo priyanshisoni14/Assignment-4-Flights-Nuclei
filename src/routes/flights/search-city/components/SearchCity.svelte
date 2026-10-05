@@ -77,7 +77,8 @@
 		const newSelection = {
 			locationName: airport.city,
 			iataCode: airport.iataCode,
-			airportName: airport.name
+			airportName: airport.name,
+			countryCode: airport.countryCode
 		};
 		const current = $flightSearchStore;
 		// get the other end of the trip

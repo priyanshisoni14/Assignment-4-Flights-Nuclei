@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import type { FlightSearchState } from '$flights/stores/flightSearchStore.js';
-
+import { fromFareType } from './special-fare.js';
 export const SEARCH_CACHE_KEY = 'flightLandingSearchCityCache';
 
 // dates are stored as epoch-ms strings, like the backend's searchRequest
@@ -72,7 +72,7 @@ export const loadSearchFromCache = (): FlightSearchState | null => {
 			infants: r.infantCount,
 			travelClass: r.travellerClass,
 			nonStopOnly: r.nonStopOnly,
-			specialFare: r.specialFare ?? null
+			specialFare: fromFareType(r.specialFare)
 		};
 	} catch {
 		return null;

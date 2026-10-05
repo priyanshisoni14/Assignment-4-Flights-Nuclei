@@ -4,6 +4,7 @@ export interface Location {
 	locationName: string;
 	iataCode: string;
 	airportName?: string;
+	countryCode?: string;
 }
 
 export interface FlightSearchState {

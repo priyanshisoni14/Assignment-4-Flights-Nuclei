@@ -186,3 +186,20 @@ export function getBestFare(segment: FlightSegment): PartnerFare | undefined {
 		[...segment.fareList].sort((a, b) => a.fare - b.fare)[0]
 	);
 }
+const pickedPartnerFare = (list: FlightSegment[], sel: FlightSelection | null) =>
+	sel
+		? list.find((f) => f.segmentId === sel.segmentId)?.fareList.find((p) => p.fareId === sel.fareId)
+		: undefined;
+
+export const proceedPayload = derived(flightListingStore, ($s) => {
+	const o = pickedPartnerFare($s.onwardFlights, $s.selectedOnward);
+	const r = pickedPartnerFare($s.returnFlights, $s.selectedReturn);
+	if (!o || !r) return null;
+	const pick = (f: PartnerFare) => ({
+		segmentId: f.segmentId,
+		fareId: f.fareId,
+		partnerId: f.partnerId,
+		fare: f.fare
+	});
+	return { onward: pick(o), return: pick(r), total: o.fare + r.fare, currencySymbol: o.currencySymbol };
+});

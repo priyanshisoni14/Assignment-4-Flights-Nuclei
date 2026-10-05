@@ -120,14 +120,16 @@
 					: {
 							locationName: searchRequest.src.city,
 							iataCode: searchRequest.src.iataCode,
-							airportName: searchRequest.src.name
+							airportName: searchRequest.src.name,
+							countryCode: searchRequest.src.countryCode
 					  },
 				destination: savedDestination
 					? JSON.parse(savedDestination)
 					: {
 							locationName: searchRequest.des.city,
 							iataCode: searchRequest.des.iataCode,
-							airportName: searchRequest.des.name
+							airportName: searchRequest.des.name,
+							countryCode: searchRequest.src.countryCode
 					  },
 				...(apiDatesValid
 					? {

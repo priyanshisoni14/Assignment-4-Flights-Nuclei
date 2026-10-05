@@ -17,11 +17,12 @@
 	import ClassTravellerBottomSheet from './ClassTravellerBottomSheet.svelte';
 	$: SPECIAL_FARES = [
 		{
+			key: 'student',
 			name: $flightsTranslationStore('flights.fare.student'),
 			badge: $flightsTranslationStore('flights.fare.new_badge')
 		},
-		{ name: $flightsTranslationStore('flights.fare.senior_citizen') },
-		{ name: $flightsTranslationStore('flights.fare.armed_forces') }
+		{ key: 'senior_citizen', name: $flightsTranslationStore('flights.fare.senior_citizen') },
+		{ key: 'armed_forces', name: $flightsTranslationStore('flights.fare.armed_forces') }
 	];
 	// for cdna to know which sheet to open
 	const TRAVELLER_SHEET_ID = 'traveller-class-selector';
@@ -173,16 +174,16 @@
 					<button
 						type="button"
 						class="w-full truncate whitespace-nowrap rounded-full border px-2 py-2 text-center text-[0.78125rem] transition-colors sm:px-4 sm:text-sm md:px-5 md:py-2.5 md:text-base
-				{$flightSearchStore.specialFare === fare.name
+		{$flightSearchStore.specialFare === fare.key
 							? 'border-primary bg-primary text-white'
 							: 'border-gray-300 text-black hover:border-primary hover:text-primary'}"
-						aria-pressed={$flightSearchStore.specialFare === fare.name}
-						on:click={() => toggleSpecialFare(fare.name)}
+						aria-pressed={$flightSearchStore.specialFare === fare.key}
+						on:click={() => toggleSpecialFare(fare.key)}
 					>
 						{fare.name}
 						{#if fare.badge}
-							<span class="sr-only">, {$flightsTranslationStore('flights.fare.new_badge')}</span
-							>{/if}
+							<span class="sr-only">, {$flightsTranslationStore('flights.fare.new_badge')}</span>
+						{/if}
 					</button>
 				</div>
 			{/each}

@@ -29,6 +29,8 @@
 	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { isNonStopInUrl, setListingNonStop } from '$lib/flights-commons/utils/non-stop-param.js';
+	import { fromFareType } from '$lib/flights-commons/utils/special-fare.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -58,7 +60,7 @@
 	$: selectedDate = toCalendarDate(dayjs(params?.departDate));
 
 	let mounted = false;
-	let isFirstLoad = true;
+
 	// true only while a chip change is refetching: loader shows in the list area,
 	// the filter bar stays mounted
 	let isListLoading = false;
@@ -74,23 +76,17 @@
 	onMount(() => {
 		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
 		mounted = true;
-		// after a hard reload the config store is empty: the class/traveller options need it in modify search
-		// TODO: config cache
+		// after a hard reload the config store is empty: modify search needs it (cached by ensureFlightConfig)
 		ensureFlightConfig();
 	});
 
 	// ?stop=0 (with sort_id=1) means "non-stop only": the Non-stop chip is selected from it and
 	// the api is called with that filter. specialFare is only mirrored into the search box
-	$: nonStopParam = $page.url.searchParams.get('stop');
-	$: specialFareParam = $page.url.searchParams.get('specialFare');
+	$: nonStopOn = isNonStopInUrl($page.url.searchParams);
 
 	// the url is the truth: copy it into flightSearchStore (and the cache), so the sheet opens
 	// pre-filled and landing shows the same search when the user goes back
-	const syncStoreFromUrl = (
-		p: ListingParams,
-		nonStop: string | null,
-		specialFare: string | null
-	) => {
+	const syncStoreFromUrl = (p: ListingParams, nonStop: boolean) => {
 		// the user is editing in the sheet (or came back from search-city): don't overwrite the draft
 		// dont change url yet while editing
 		if (get(modifySheetOpen)) return;
@@ -108,12 +104,14 @@
 			source: {
 				locationName: p.src.city,
 				iataCode: p.src.iataCode,
-				airportName: airportName(p.src.iataCode)
+				airportName: airportName(p.src.iataCode),
+				countryCode: p.src.countryCode
 			},
 			destination: {
 				locationName: p.des.city,
 				iataCode: p.des.iataCode,
-				airportName: airportName(p.des.iataCode)
+				airportName: airportName(p.des.iataCode),
+				countryCode: p.des.countryCode
 			},
 			departureDate: new Date(y, m - 1, d),
 			isRoundTrip: p.returnDate !== null,
@@ -124,13 +122,13 @@
 			children: p.children,
 			infants: p.infants,
 			travelClass: p.travelClass.key,
-			nonStopOnly: nonStop === '0',
-			specialFare
+			nonStopOnly: nonStop,
+			specialFare: fromFareType(p.fareType)
 		};
 		flightSearchStore.set(next);
 		saveSearchToCache(next);
 	};
-	$: if (params) syncStoreFromUrl(params, nonStopParam, specialFareParam);
+	$: if (params) syncStoreFromUrl(params, nonStopOn);
 
 	// search-city saves the picked city here; if the edit is abandoned it must not leak to landing
 	const clearPickedCities = () => {
@@ -144,7 +142,7 @@
 	const handleModifyClose = () => {
 		modifySheetOpen.set(false);
 		clearPickedCities();
-		if (params) syncStoreFromUrl(params, nonStopParam, specialFareParam);
+		if (params) syncStoreFromUrl(params, nonStopOn);
 	};
 
 	// Search pressed: FlightSearchBox already saved the cache and is replacing the url.
@@ -157,19 +155,24 @@
 	// runs once after mount, and again whenever the url params change (e.g. a new date)
 	$: if (mounted && params) loadListing(params);
 
+	let lastSearchKey = '';
+	// everything except the departure date: if it changes, it is a new search
+	const searchKeyOf = (p: ListingParams) => buildListingPath({ ...p, departDate: '' });
+
 	const loadListing = (p: ListingParams) => {
 		setLoadingLce();
-		if (isFirstLoad) {
-			isFirstLoad = false;
-			stopFromUrlHandled = false; // the url's stop=0 must be applied once to the new chips
-			resetFlightListing(); // clear flights + chips from any previous search
-			resetFareCalendar(); // clear fares from any previous search
-			fetchFareCalendar(p); // not awaited: a fare calendar failure must not block the listing
+		const key = searchKeyOf(p);
+		if (key !== lastSearchKey) {
+			lastSearchKey = key;
+			stopFromUrlHandled = false;
+			resetFlightListing();
+			resetFareCalendar();
+			// the strip is hidden on round trips, so don't pay for the call
+			if (p.returnDate === null) fetchFareCalendar(p);
+			else setFareCalendar([]);
 		}
-		// on a date change the chips are kept and sent with the new date
 		fetchScreenData(p);
 	};
-
 	// convert a dayjs date to the fare calendar api format
 	function toCalendarDate(d: dayjs.Dayjs): CalendarDate {
 		return { year: d.year(), month: d.month() + 1, day: d.date() };
@@ -218,28 +221,25 @@
 		// a return date before the new departure would be invalid: move it to the same day
 		const returnDate =
 			params.returnDate && params.returnDate < departDate ? departDate : params.returnDate;
-		goto(`${base}/flights/listing/${buildListingPath({ ...params, departDate, returnDate })}`, {
-			replaceState: true
-		});
+		goto(
+			`${base}/flights/listing/${buildListingPath({ ...params, departDate, returnDate })}${
+				$page.url.search
+			}`,
+			{ replaceState: true }
+		);
 	};
 
 	// keeps the url honest about the Non-stop chip: selected -> ?sort_id=1&stop=0, else both removed.
 	// replaceState so Back doesn't step through every chip tap
 	const syncStopToUrl = () => {
-		const nonStopOn = get(quickFilters).some(
+		const nonStopSelected = get(quickFilters).some(
 			(c: { filterType: string; filterValue: string; isSelected: boolean }) =>
 				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0' && c.isSelected
 		);
 		const url = new URL(location.href);
-		if (nonStopOn) {
-			url.searchParams.set('sort_id', '1');
-			url.searchParams.set('stop', '0');
-		} else {
-			url.searchParams.delete('sort_id');
-			url.searchParams.delete('stop');
-		}
+		setListingNonStop(url.searchParams, nonStopSelected);
 		if (url.href === location.href) return;
-		goto(url, { replaceState: true, noscroll: true, keepfocus: true });
+		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
 	};
 
 	// a chip was toggled: refetch from the server with the new filters
@@ -323,7 +323,7 @@
 				(c: { filterType: string; filterValue: string }) =>
 					c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
 			);
-			if (nonStopParam === '0' && nonStopChip && !nonStopChip.isSelected) {
+			if (nonStopOn && nonStopChip && !nonStopChip.isSelected) {
 				toggleQuickFilter('NO_OF_STOPS', '0');
 				return fetchScreenData(p, isFilterRefetch);
 			}
@@ -349,18 +349,16 @@
 	// the url's stop param changed without the path changing (e.g. Modify Search toggled non-stop
 	// and Search was pressed): make the Non-stop chip match the url and refetch.
 	// If the chip already matches (chip tap, first load), nothing happens, so no double fetch
-	const applyStopFromUrl = (stopParam: string | null) => {
+	const applyStopFromUrl = (wantOn: boolean) => {
 		const chip = get(quickFilters).find(
 			(c: { filterType: string; filterValue: string }) =>
 				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
 		);
-		if (!chip) return; // chips not loaded yet: the first-load handler in fetchScreenData covers it
-		const wantOn = stopParam === '0';
-		if (chip.isSelected === wantOn) return;
+		if (!chip || chip.isSelected === wantOn) return;
 		toggleQuickFilter('NO_OF_STOPS', '0');
 		if (params) fetchScreenData(params, true);
 	};
-	$: if (mounted && params) applyStopFromUrl(nonStopParam);
+	$: if (mounted && params) applyStopFromUrl(nonStopOn);
 </script>
 
 <div

@@ -23,8 +23,7 @@
 			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 			.join(' ');
 
-	// everything comes from the url, which is available on the server too,
-	// so the first paint already shows the right route
+	// everything comes from the url
 	$: search = parseListingParams($page.params.params ?? '');
 	$: travellerCount = search ? search.adults + search.children + search.infants : 0;
 	$: travellerLabel = `${travellerCount} ${travellerCount === 1 ? 'Traveller' : 'Travellers'}`;

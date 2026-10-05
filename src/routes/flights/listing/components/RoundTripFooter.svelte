@@ -1,9 +1,16 @@
 <script lang="ts">
-	import { canProceed, selectedTotal } from '$flights/stores/flightListingStore.js';
+	import { canProceed, proceedPayload, selectedTotal } from '$flights/stores/flightListingStore.js';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import { createEventDispatcher } from 'svelte';
 
-	// the booking screen does not exist yet: for now Proceed only logs
-	const handleProceed = () => NucleiLogger.logInfo('Flights', 'Proceed clicked');
+	const dispatch = createEventDispatcher<{ proceed: NonNullable<typeof $proceedPayload> }>();
+
+	// the booking screen does not exist yet: log and hand the payload to whoever listens
+	const handleProceed = () => {
+		if (!$proceedPayload) return;
+		NucleiLogger.logInfo('Flights', 'Proceed clicked', $proceedPayload);
+		dispatch('proceed', $proceedPayload);
+	};
 </script>
 
 <div class="shrink-0 border-t border-gray-200 bg-white">

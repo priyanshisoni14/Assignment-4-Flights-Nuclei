@@ -16,7 +16,8 @@
 	// add above `import { base } ...`
 	import { createEventDispatcher } from 'svelte'; // add near the other imports
 	import { saveSearchToCache } from '../utils/flight-search-cache-util.js';
-
+	import { setListingNonStop } from '../utils/non-stop-param.js';
+	import { toFareType } from '../utils/special-fare.js';
 	// 'landing' pushes a new listing screen, 'modify' replaces the current listing url
 	export let mode: 'landing' | 'modify' = 'landing';
 	const dispatch = createEventDispatcher<{ search: void }>();
@@ -30,16 +31,19 @@
 			config.travellers.find((t: any) => t.key === flightstore.travelClass)?.value ??
 			flightstore.travelClass;
 
+		const countryOf = (l: { countryCode?: string }) =>
+			l.countryCode || config.partnerCountry || 'IN';
+
 		const path = buildListingPath({
 			src: {
 				iataCode: flightstore.source.iataCode,
 				city: flightstore.source.locationName,
-				countryCode: 'IN'
+				countryCode: countryOf(flightstore.source)
 			},
 			des: {
 				iataCode: flightstore.destination.iataCode,
 				city: flightstore.destination.locationName,
-				countryCode: 'IN'
+				countryCode: countryOf(flightstore.destination)
 			},
 			departDate: dayjs(flightstore.departureDate).format('YYYY-MM-DD'),
 			returnDate:
@@ -51,18 +55,13 @@
 			children: flightstore.children,
 			infants: flightstore.infants,
 			travelClass: { key: flightstore.travelClass, value: classLabel },
-			fareType: 'regular'
+			fareType: toFareType(flightstore.specialFare)
 		});
 
-		// keep the selection so going back to landing shows it
 		saveSearchToCache(flightstore);
 
-		// nonStop / specialFare are not in the path, so they go as query params
-		// so my landing and listing page dont differ
 		const query = new URLSearchParams();
-		if (flightstore.nonStopOnly) query.set('stop', '0');
-
-		if (flightstore.specialFare) query.set('specialFare', flightstore.specialFare);
+		setListingNonStop(query, flightstore.nonStopOnly);
 		const qs = query.toString() ? `?${query.toString()}` : '';
 		const url = `${base}/flights/listing/${path}${qs}`;
 
