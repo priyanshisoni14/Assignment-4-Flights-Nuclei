@@ -12,6 +12,9 @@ const isStorageAvailable = (): boolean => {
 	if (!browser) return false;
 	if (storageOk === undefined) {
 		try {
+            //checking if localStorage is available or not
+            //by setting a key and then removing it
+            //if not then it will throw an error
 			const probe = '__flights_probe__';
 			localStorage.setItem(probe, probe);
 			localStorage.removeItem(probe);
@@ -31,6 +34,7 @@ export class FlightsConfigCacheUtil {
 		return `${FlightsConfigCacheUtil.CONFIG_CACHE_NAME}:${scope}`;
 	}
 
+    // read the cache entry for the given scope
 	private static read(scope: string): CacheEntry | undefined {
 		if (!isStorageAvailable()) return undefined;
 		try {
@@ -47,34 +51,20 @@ export class FlightsConfigCacheUtil {
 		try {
 			localStorage.setItem(FlightsConfigCacheUtil.keyFor(scope), JSON.stringify(entry));
 		} catch {
-			// quota exceeded / blocked: caching is best effort, ignore
+			// quota exceeded or storage blocked: caching is best-effort, so ignore
 		}
 	}
 
 	// to be used only right after the getConfig api succeeded
 	static cacheNewConfig(response: any, scope = 'default') {
-		if (!isStorageAvailable()) return;
 		// the backend sends how long the config may be cached (24h = "86400000") in the config map
-const apiTtl = Number.parseInt(
-	response?.searchRequest?.configMap?.CACHING_TIME_IN_MILLISECOND ?? response?.exp,
-	10
-);
+		const apiTtl = Number.parseInt(
+			response?.searchRequest?.configMap?.CACHING_TIME_IN_MILLISECOND ?? response?.exp,
+			10
+		);
 		const ttl =
 			Number.isFinite(apiTtl) && apiTtl > 0 ? Math.min(apiTtl, MAX_TTL_MS) : DEFAULT_TTL_MS;
 		FlightsConfigCacheUtil.write(scope, { expiry: Date.now() + ttl, data: response });
-	}
-
-	// replaces the cached data but keeps the old expiry (it does not extend the cache)
-	static updateExistingConfig(response: any, scope = 'default') {
-		const entry = FlightsConfigCacheUtil.read(scope);
-		if (!entry) return;
-		FlightsConfigCacheUtil.write(scope, { expiry: entry.expiry, data: response });
-	}
-
-	// true when there is nothing cached or the cached copy is past its expiry
-	static isConfigExpired(scope = 'default'): boolean {
-		const entry = FlightsConfigCacheUtil.read(scope);
-		return !entry || entry.expiry <= Date.now();
 	}
 
 	// the cached getConfig response. an expired copy is returned only when allowExpired is true
@@ -84,11 +74,5 @@ const apiTtl = Number.parseInt(
 		if (!entry) return undefined;
 		if (!allowExpired && entry.expiry <= Date.now()) return undefined;
 		return entry.data;
-	}
-
-	// handy while testing: forces the next load to call the api
-	static clear(scope = 'default') {
-		if (!isStorageAvailable()) return;
-		localStorage.removeItem(FlightsConfigCacheUtil.keyFor(scope));
 	}
 }

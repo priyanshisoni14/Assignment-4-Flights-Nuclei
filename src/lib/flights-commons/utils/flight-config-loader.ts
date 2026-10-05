@@ -44,7 +44,7 @@ export const getFlightConfig = (): Promise<FlightConfigResult> => {
 	return inFlight;
 };
 
-// puts the config part of searchRequest into the store the class/traveller options read from
+// puts the config parameters into the store
 export const applyConfigToStore = (searchRequest: any) => {
 	flightConfigStore.set({
 		guests: searchRequest.guests ?? [],
@@ -55,8 +55,9 @@ export const applyConfigToStore = (searchRequest: any) => {
 	});
 };
 
-// listing screen: after a hard reload the store is empty and the Modify Search sheet needs it
+// listing screen: after a hard reload the store is empty 
 export const ensureFlightConfig = async () => {
+	// if the config has already been loaded in this page session no need to fetch it again
 	if (get(flightConfigStore).travellers.length > 0) return;
 
 	const { searchRequest } = await getFlightConfig();

@@ -1,9 +1,9 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import ClearTripIcon from '$lib/flights-commons/icons/cleartrip.svelte';
 	import EaseMyTripIcon from '$lib/flights-commons/icons/easemytrip.svelte';
 	import ScaleIcon from '$lib/flights-commons/icons/scale.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import { flightsTranslationStore } from '$flights/i18n.js';
 
 	let visible = true;
 
