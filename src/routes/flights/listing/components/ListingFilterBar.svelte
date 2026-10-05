@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { flightsTranslationStore } from '$flights/i18n.js';
 	import {
 		appliedFilterCount,
 		quickFilters,
@@ -6,7 +7,6 @@
 	} from '$flights/stores/flightListingStore.js';
 	import SortAndFilterIcon from '$lib/flights-commons/icons/SortAndFilterIcon.svelte';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-	import { flightsTranslationStore } from '$flights/i18n.js';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher<{ change: void }>();

@@ -180,6 +180,11 @@
 
 	// to call the fare calendar api using the search parameters from the url
 	const fetchFareCalendar = async (p: ListingParams) => {
+		// round trip: the strip is hidden, so skip the api call
+		if (p.returnDate !== null) {
+			setFareCalendar([]);
+			return;
+		}
 		setFareCalendarLoading();
 
 		const start = dayjs(); // today
