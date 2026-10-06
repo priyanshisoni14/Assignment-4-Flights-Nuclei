@@ -5,6 +5,7 @@
 	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import HistoryIcon from '$lib/flights-commons/icons/HistoryIcon.svelte';
 	import LocationPinIcon from '$lib/flights-commons/icons/LocationPinIcon.svelte';
+	import { savePickedLocation } from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import SearchBar from '@CDNA-Technologies/svelte-vitals/components/search-bar';
 	import { onMount, tick } from 'svelte';
@@ -14,6 +15,9 @@
 	const RECENT_SEARCHES_KEY = 'flights_recent_airports';
 	const MAX_RECENT_SEARCHES = 6;
 	let searchError = false;
+	// every api call takes a number; a response that is not the latest one is ignored,
+	// so an older, slower response can never overwrite newer results
+	let requestCounter = 0;
 	//extract the title from the url
 	const appBarTitle = $page.url.searchParams.get('title') ?? 'Search City';
 	const searchType = $page.url.searchParams.get('type');
@@ -44,30 +48,37 @@
 		recentAirports = updated;
 	}
 
-	onMount(async () => {
-		recentAirports = loadRecentAirports();
-
+	// loads the popular cities shown when the search box is empty
+	async function loadPopularCities() {
+		const current = ++requestCounter;
 		const result = await getPopularCities();
+		if (current !== requestCounter) return; // a newer request owns the screen now
 		const airportList = (result.response as { airportList?: Airport[] } | undefined)?.airportList;
-		// if the api call succeeds and returns a result
-		if (!result.hasError() && airportList) {
-			airports = airportList;
-		} else {
-			searchError = true;
-			airports = [];
-		}
-	});
+		// searchError is set from the result every time, so a successful retry clears it
+		searchError = result.hasError() || !airportList;
+		airports = searchError ? [] : airportList ?? [];
+	}
 
 	// when the user types in the search box
 	async function handleSearchChange(text: string) {
+		const current = ++requestCounter;
 		isSearching = true;
 		const result = await getAirportSearchResults(text);
+		if (current !== requestCounter) return; // the newer request will clear isSearching
 		isSearching = false;
 		const airportList = (result.response as { airportList?: Airport[] } | undefined)?.airportList;
-		if (!result.hasError() && airportList) {
-			airports = airportList;
-		}
+		// same rule as loadPopularCities: a failed search is an error, not "no results"
+		searchError = result.hasError() || !airportList;
+		airports = searchError ? [] : airportList ?? [];
 	}
+
+	// retry whatever failed last: the typed search, or the popular cities
+	const handleRetry = () => (isSearchActive ? handleSearchChange(searchText) : loadPopularCities());
+
+	onMount(() => {
+		recentAirports = loadRecentAirports();
+		loadPopularCities();
+	});
 
 	// navigate back to the previous screen
 	const handleBackClick = () => history.back();
@@ -94,18 +105,19 @@
 
 		saveRecentAirport(airport);
 
-		// update the store with the new selection
-		flightSearchStore.update((store) => {
-			if (searchType === 'source') store.source = newSelection;
-			else if (searchType === 'destination') store.destination = newSelection;
-			return store;
-		});
+		// update the store with the new selection (a new object, like everywhere else in the app)
+		flightSearchStore.update((s) =>
+			searchType === 'source'
+				? { ...s, source: newSelection }
+				: searchType === 'destination'
+				? { ...s, destination: newSelection }
+				: s
+		);
 
 		// persist across a hard reload / native-bridge navigation back to Landing
-		sessionStorage.setItem(
-			searchType === 'source' ? 'flights_selected_source' : 'flights_selected_destination',
-			JSON.stringify(newSelection)
-		);
+		if (searchType === 'source' || searchType === 'destination') {
+			savePickedLocation(searchType, newSelection);
+		}
 
 		// waits until svelte has updated the store
 		await tick();
@@ -186,7 +198,7 @@
 				<button
 					type="button"
 					class="text-sm font-semibold text-primary underline md:text-base"
-					on:click={() => handleSearchChange(searchText)}
+					on:click={handleRetry}
 				>
 					{$flightsTranslationStore('flights.retry')}
 				</button>

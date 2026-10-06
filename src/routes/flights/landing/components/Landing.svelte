@@ -14,7 +14,10 @@
 		applyConfigToStore,
 		getFlightConfig
 	} from '$lib/flights-commons/utils/flight-config-loader.js';
-	import { loadSearchFromCache } from '$lib/flights-commons/utils/flight-search-cache-util.js';
+	import {
+		consumePickedLocation,
+		loadSearchFromCache
+	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -96,12 +99,6 @@
 			const apiClass = searchRequest.travellerClass?.toUpperCase();
 			const matchedClass = searchRequest.travellers?.find((t: any) => t.key === apiClass);
 
-			// check for a city the user already picked on the search-city screen —
-			// without this, the API's default source/destination silently overwrites
-			// whatever was just selected, every time this screen re-runs fetchScreenData
-			const savedSource = sessionStorage.getItem('flights_selected_source');
-			const savedDestination = sessionStorage.getItem('flights_selected_destination');
-
 			// a cached config can be days old: its default dates are used only while they are still today or later,
 			// otherwise the default is today + the number of days the backend asks for (0 = today)
 			const today = new Date().setHours(0, 0, 0, 0);
@@ -112,24 +109,22 @@
 					Number(searchRequest.configMap?.LANDING_DAYS_FROM_START_DATE ?? 0)
 			);
 
+			// a city the user picked on the search-city screen is applied right after this
+			// (applySavedSelectionFromSessionStorage), so only the api defaults are set here
 			flightSearchStore.update((s) => ({
 				...s,
-				source: savedSource
-					? JSON.parse(savedSource)
-					: {
-							locationName: searchRequest.src.city,
-							iataCode: searchRequest.src.iataCode,
-							airportName: searchRequest.src.name,
-							countryCode: searchRequest.src.countryCode
-					  },
-				destination: savedDestination
-					? JSON.parse(savedDestination)
-					: {
-							locationName: searchRequest.des.city,
-							iataCode: searchRequest.des.iataCode,
-							airportName: searchRequest.des.name,
-							countryCode: searchRequest.src.countryCode
-					  },
+				source: {
+					locationName: searchRequest.src.city,
+					iataCode: searchRequest.src.iataCode,
+					airportName: searchRequest.src.name,
+					countryCode: searchRequest.src.countryCode
+				},
+				destination: {
+					locationName: searchRequest.des.city,
+					iataCode: searchRequest.des.iataCode,
+					airportName: searchRequest.des.name,
+					countryCode: searchRequest.des.countryCode
+				},
 				...(apiDatesValid
 					? {
 							departureDate: new Date(Number(searchRequest.departDate)),
@@ -152,23 +147,12 @@
 		setContentLce();
 	};
 
-	// consumes the saved selection from session storage and cleans it up to prevent stale data
-	function consumeSavedSelection(key: string): { locationName: string; iataCode: string } | null {
-		const raw = sessionStorage.getItem(key);
-		if (!raw) return null;
-		sessionStorage.removeItem(key);
-		try {
-			return JSON.parse(raw);
-		} catch (err) {
-			NucleiLogger.logWarn('Landing', 'Failed to parse saved selection from session storage');
-			return null;
-		}
-	}
 	// checking if there is a saved selection sitting in session storage
-	// and updating the store in case of a hard refresh
+	// and updating the store in case of a hard refresh.
+	// consume = read and remove, so a stale pick can never come back later
 	function applySavedSelectionFromSessionStorage() {
-		const savedSource = consumeSavedSelection('flights_selected_source');
-		const savedDestination = consumeSavedSelection('flights_selected_destination');
+		const savedSource = consumePickedLocation('source');
+		const savedDestination = consumePickedLocation('destination');
 
 		if (savedSource || savedDestination) {
 			flightSearchStore.update((s) => ({

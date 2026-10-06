@@ -3,7 +3,7 @@ import type { FlightConfigState } from '$flights/stores/flightConfigStore.js';
 
 export function getGuestLimits(guestType: 'ADULT' | 'CHILD' | 'INFANT', flightConfigStore: Writable<FlightConfigState>) {
 	const config = get(flightConfigStore);
-	const guest = config.guests.find((g) => g.guestType === guestType);
+	const guest = config.guests.find((g: { guestType: string; }) => g.guestType === guestType);
 	return {
 		min: guest?.minValue ?? (guestType === 'ADULT' ? 1 : 0),
 		max: guest?.maxValue ?? 9

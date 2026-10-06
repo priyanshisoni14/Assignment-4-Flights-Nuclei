@@ -28,7 +28,11 @@
 		saveSearchToCache
 	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
 	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
-	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import {
+		buildListingPath,
+		parseListingDate,
+		parseListingParams
+	} from '$lib/flights-commons/utils/listing-url.js';
 	import { isNonStopInUrl, setListingNonStop } from '$lib/flights-commons/utils/non-stop-param.js';
 	import { fromFareType } from '$lib/flights-commons/utils/special-fare.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
@@ -98,7 +102,7 @@
 			[current.source, current.destination, cached?.source, cached?.destination].find(
 				(l) => l?.iataCode === iata && l.airportName
 			)?.airportName;
-		const [y, m, d] = p.departDate.split('-').map(Number);
+
 		const next = {
 			...current,
 			source: {
@@ -113,11 +117,9 @@
 				airportName: airportName(p.des.iataCode),
 				countryCode: p.des.countryCode
 			},
-			departureDate: new Date(y, m - 1, d),
+			departureDate: parseListingDate(p.departDate),
 			isRoundTrip: p.returnDate !== null,
-			returnDate: p.returnDate
-				? (([ry, rm, rd]) => new Date(ry, rm - 1, rd))(p.returnDate.split('-').map(Number))
-				: undefined,
+			returnDate: p.returnDate ? parseListingDate(p.returnDate) : undefined,
 			adults: p.adults,
 			children: p.children,
 			infants: p.infants,

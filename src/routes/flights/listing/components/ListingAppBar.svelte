@@ -1,19 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
-	import { parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { parseListingDate, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import dayjs from 'dayjs';
 	import { createEventDispatcher } from 'svelte';
 
 	const dispatch = createEventDispatcher<{ edit: void }>();
 
-	// "30 Sep". The date is built from its parts, because new Date('2026-09-30')
-	// is read as UTC and can shift by a day in some timezones
-	const formatDate = (isoDate: string) => {
-		const [y, m, d] = isoDate.split('-').map(Number);
-		return new Date(y, m - 1, d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-	};
+	// "30 Sep". The parsing (and why it must not use new Date(iso)) lives in parseListingDate
+	const formatDate = (iso: string) => dayjs(parseListingDate(iso)).format('D MMM');
 
 	// "PREMIUM_ECONOMY" -> "Premium Economy"
 	const formatClass = (key: string) =>

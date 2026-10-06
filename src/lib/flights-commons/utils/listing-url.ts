@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 export interface ListingAirport {
 	iataCode: string;
 	city: string;
@@ -44,6 +46,10 @@ export const buildListingPath = (p: ListingParams): string =>
 		.map((segment) => encodeURIComponent(String(segment)))
 		.join('/');
 
+
+// "YYYY-MM-DD" -> local Date. dayjs reads this format as local time, so the date does not
+// shift by a day in some timezones the way new Date('2026-09-30') (read as UTC) can
+export const parseListingDate = (iso: string): Date => dayjs(iso).toDate();
 // "DEL/New Delhi/IN/..." -> object. SvelteKit has already decoded the param, so nothing is decoded here.
 // Returns null for anything malformed, so the page can show an error instead of crashing.
 export const parseListingParams = (path: string): ListingParams | null => {

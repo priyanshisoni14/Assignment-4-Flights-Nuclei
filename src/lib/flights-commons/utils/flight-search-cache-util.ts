@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import type { FlightSearchState } from '$flights/stores/flightSearchStore.js';
+import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 import { fromFareType } from './special-fare.js';
 export const SEARCH_CACHE_KEY = 'flightLandingSearchCityCache';
 
@@ -91,5 +92,59 @@ export const saveNonStopToCache = (nonStopOnly: boolean) => {
 		localStorage.setItem(SEARCH_CACHE_KEY, JSON.stringify(list));
 	} catch {
 		// storage unavailable, ignore
+	}
+};
+
+// ---- cities picked on the search-city screen ----
+// search-city saves the pick here; landing applies it. The keys live in this one place only,
+// so the three screens can never disagree about them
+type PickedType = 'source' | 'destination';
+type PickedLocation = FlightSearchState['source'];
+
+const PICKED_KEYS: Record<PickedType, string> = {
+	source: 'flights_selected_source',
+	destination: 'flights_selected_destination'
+};
+
+export const savePickedLocation = (type: PickedType, location: PickedLocation) => {
+	if (!browser) return;
+	try {
+		sessionStorage.setItem(PICKED_KEYS[type], JSON.stringify(location));
+	} catch {
+		// storage unavailable, ignore
+	}
+};
+
+// reads without removing. A broken or old-format value gives null instead of throwing
+export const peekPickedLocation = (type: PickedType): PickedLocation | null => {
+	if (!browser) return null;
+	try {
+		const raw = sessionStorage.getItem(PICKED_KEYS[type]);
+		const parsed = raw ? JSON.parse(raw) : null;
+		return parsed && typeof parsed.iataCode === 'string' ? (parsed as PickedLocation) : null;
+	} catch {
+		NucleiLogger.logWarn('Flights', 'Failed to read picked location from session storage');
+		return null;
+	}
+};
+
+// reads and removes, even when the value was broken, so it can never get stuck
+export const consumePickedLocation = (type: PickedType): PickedLocation | null => {
+	const value = peekPickedLocation(type);
+	try {
+		sessionStorage.removeItem(PICKED_KEYS[type]);
+	} catch {
+		// ignore
+	}
+	return value;
+};
+
+// the edit was abandoned: neither pick may leak to landing
+export const clearPickedLocations = () => {
+	if (!browser) return;
+	try {
+		Object.values(PICKED_KEYS).forEach((key) => sessionStorage.removeItem(key));
+	} catch {
+		// ignore
 	}
 };
