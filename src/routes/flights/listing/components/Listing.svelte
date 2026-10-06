@@ -244,7 +244,7 @@
 		const url = new URL(location.href);
 		setListingNonStop(url.searchParams, nonStopSelected);
 		if (url.href === location.href) return;
-		goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+		goto(url, { replaceState: true, noscroll: true, keepfocus: true });
 	};
 
 	// a chip was toggled: refetch from the server with the new filters

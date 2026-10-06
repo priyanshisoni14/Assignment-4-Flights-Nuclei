@@ -8,7 +8,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
+	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
 	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import {
 		applyConfigToStore,
@@ -33,7 +33,6 @@
 	// when the landing screen is mounted
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
-		modifySheetOpen.set(false); // a half-finished edit from the listing screen is dropped
 		setLoadingLce();
 		// fetch the backend config and update the store
 		await fetchScreenData();
@@ -68,7 +67,7 @@
 		if (param !== String($flightSearchStore.nonStopOnly)) {
 			const url = new URL(location.href);
 			url.searchParams.set('nonStop', String($flightSearchStore.nonStopOnly));
-			goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+			goto(url, { replaceState: true, noscroll: true, keepfocus: true });
 		}
 	}
 	// fetch the backend config and update the store
