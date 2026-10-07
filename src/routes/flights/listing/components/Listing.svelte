@@ -44,23 +44,22 @@
 	import dayjs from 'dayjs';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
-	import CompareBanner from './CompareBanner.svelte';
 	import FareCalendar from './FareCalendar.svelte';
-	import FlightListing from './FlightListing.svelte';
 	import ListingAppBar from './ListingAppBar.svelte';
-	import ListingFilterBar from './ListingFilterBar.svelte';
 	import ModifySearchSheet from './ModifySearchSheet.svelte';
-	import RoundTripFooter from './RoundTripFooter.svelte';
-	import RoundTripListing from './RoundTripListing.svelte';
-	import RoundTripTabs from './RoundTripTabs.svelte';
-
+	import OneWayContent from './OneWayContent.svelte';
+	import RoundTripContent from './RoundTripContent.svelte';
 	// the url is the single source of truth for the search, so a hard reload keeps everything.
 	// routeKey is a string, so params is only rebuilt when the url segments really change
 	$: routeKey = $page.params.params ?? '';
 	$: params = parseListingParams(routeKey);
 	// the calendar highlights the departure date from the url
 	$: selectedDate = toCalendarDate(dayjs(params?.departDate));
-
+	// the fare strip is one way only: on a round trip, picking a date here would break the return date
+	$: showFareCalendar =
+		!!params &&
+		!params.returnDate &&
+		($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0);
 	let mounted = false;
 
 	// true only while a chip change is refetching: loader shows in the list area,
@@ -276,8 +275,7 @@
 		on:searched={handleModifySearched}
 	/>
 
-	<!-- fare calendar: one way only. on a round trip, picking a date here would break the return date -->
-	{#if params && !params.returnDate && ($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0)}
+	{#if showFareCalendar}
 		<div class="w-full min-w-0 bg-[#f0f0f5]">
 			<FareCalendar {selectedDate} on:select={handleDateSelect} />
 		</div>
@@ -298,31 +296,9 @@
 		</div>
 	{:else if $lceStore.hasContent}
 		{#if $isRoundTripListing}
-			<RoundTripTabs {activeLeg} on:change={(e) => (activeLeg = e.detail)} />
-		{/if}
-
-		<main
-			class="min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f0f5] pb-[max(2.5rem,env(safe-area-inset-bottom))]"
-		>
-			<div
-				class="w-full min-w-0 space-y-3 px-4 pt-4 sm:px-6 md:space-y-4 md:pt-6 lg:px-10 xl:px-16"
-			>
-				<ListingFilterBar on:change={handleFilterChange} />
-				<CompareBanner />
-				{#if isListLoading}
-					<div class="flex justify-center py-10">
-						<PrimaryLoader />
-					</div>
-				{:else if $isRoundTripListing}
-					<RoundTripListing {activeLeg} on:legchange={(e) => (activeLeg = e.detail)} />
-				{:else}
-					<FlightListing on:clear={handleClearFilters} />
-				{/if}
-			</div>
-		</main>
-
-		{#if $isRoundTripListing}
-			<RoundTripFooter />
+			<RoundTripContent {isListLoading} />
+		{:else}
+			<OneWayContent {isListLoading} on:change={handleFilterChange} on:clear={handleClearFilters} />
 		{/if}
 	{/if}
 </div>

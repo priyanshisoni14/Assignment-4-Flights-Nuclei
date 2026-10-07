@@ -37,11 +37,19 @@
 	onMount(async () => {
 		NucleiLogger.logInfo('Flights', 'Landing screen mounted');
 		setLoadingLce();
+		const isFirstLandingLoad = !hasFetchedConfig;
+
 		// fetch the backend config and update the store
 		await fetchScreenData();
-		const hasCache = applyCachedSearch();
+		if (isFirstLandingLoad) {
+			// apply the cached search (if any) and the non-stop param from the url.
+			// This is done only on the first landing load,
+			// so that a user can navigate to SearchCity and back without losing their selection.
+			const hasCache = applyCachedSearch();
+			applyNonStopFromUrl(hasCache);
+		}
+		// apply the saved selection from the session storage-search city
 		applySavedSelectionFromSessionStorage();
-		applyNonStopFromUrl(hasCache);
 	});
 	// when API fails
 	function handleRetry() {
