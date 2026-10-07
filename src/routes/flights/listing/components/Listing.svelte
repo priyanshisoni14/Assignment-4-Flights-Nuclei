@@ -1,54 +1,304 @@
 <script lang="ts">
-    import AppBar from "@CDNA-Technologies/svelte-vitals/components/appbar";
-    import PrimaryLoader from "@CDNA-Technologies/svelte-vitals/components/primary-loader";
-    import {
-      ErrorHandling,
-      lceStore,
-      setContentLce,
-      setLoadingLce,
-    } from "@CDNA-Technologies/svelte-vitals/error-handling";
-    import { NucleiLogger } from "@CDNA-Technologies/svelte-vitals/logger";
-    import { onMount } from "svelte";
+	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
+	import { page } from '$app/stores';
+	import { callGetFlightsSearchListV2 } from '$flights/api/flights-api.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
+	import { fareCalendarStore, resetFareCalendar } from '$flights/stores/fareCalendarStore.js';
+	import {
+		clearQuickFilters,
+		isRoundTripListing,
+		quickFilters,
+		resetFlightListing,
+		setFlightListing,
+		setNoFlights,
+		toggleQuickFilter
+	} from '$flights/stores/flightListingStore.js';
+	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
+	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
+	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
+	import {
+		loadFareCalendar,
+		toCalendarDate
+	} from '$lib/flights-commons/utils/fare-calendar-util.js';
+	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
+	import {
+		clearPickedLocations,
+		loadSearchFromCache,
+		saveSearchToCache
+	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
+	import { buildListingRequest } from '$lib/flights-commons/utils/listing-request.js';
+	import { searchStateFromParams } from '$lib/flights-commons/utils/listing-search-sync.js';
+	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import { isNonStopInUrl, setListingNonStop } from '$lib/flights-commons/utils/non-stop-param.js';
+	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
+	import {
+		ErrorHandling,
+		lceStore,
+		setContentLce,
+		setErrorLce,
+		setLoadingLce
+	} from '@CDNA-Technologies/svelte-vitals/error-handling';
+	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import dayjs from 'dayjs';
+	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
+	import FareCalendar from './FareCalendar.svelte';
+	import ListingAppBar from './ListingAppBar.svelte';
+	import ModifySearchSheet from './ModifySearchSheet.svelte';
+	import OneWayContent from './OneWayContent.svelte';
+	import RoundTripContent from './RoundTripContent.svelte';
+	// the url is the single source of truth for the search, so a hard reload keeps everything.
+	// routeKey is a string, so params is only rebuilt when the url segments really change
+	$: routeKey = $page.params.params ?? '';
+	$: params = parseListingParams(routeKey);
+	// the calendar highlights the departure date from the url
+	$: selectedDate = toCalendarDate(dayjs(params?.departDate));
+	// the fare strip is one way only: on a round trip, picking a date here would break the return date
+	$: showFareCalendar =
+		!!params &&
+		!params.returnDate &&
+		($fareCalendarStore.isLoading || $fareCalendarStore.fares.length > 0);
+	let mounted = false;
 
-    onMount(async () => {
-        NucleiLogger.logInfo("Flights", "Listing screen mounted");
-        setLoadingLce();
-        await fetchScreenData();
-    });
+	// true only while a chip change is refetching: loader shows in the list area,
+	// the filter bar stays mounted
+	let isListLoading = false;
+	// only the latest request is allowed to update the screen
+	// so there is no race condition between the listing and the calendar
+	// even if there is a stale api call only new data is shown
+	let requestCounter = 0;
+	// round trip: which direction is in front (tabs + the wide column)
+	let activeLeg: 'onward' | 'return' = 'onward';
+	// the chips only arrive with the first response, so a stop=0 in the url is turned into a
+	// selected Non-stop chip once, right after that response
+	let stopFromUrlHandled = false;
+	onMount(() => {
+		NucleiLogger.logInfo('Flights', 'Listing screen mounted');
+		mounted = true;
+		// after a hard reload the config store is empty: modify search needs it (cached by ensureFlightConfig)
+		ensureFlightConfig();
+	});
 
-    const fetchScreenData = async () => {
-        // fetch data from api and set lce accordingly
-        // if error, setErrorLce(response.error);
-        // else, set data to lceStore and setContentLce();
-        setContentLce();
-    };
+	// ?stop=0 (with sort_id=1) means "non-stop only": the Non-stop chip is selected from it and
+	// the api is called with that filter. specialFare is only mirrored into the search box
+	$: nonStopOn = isNonStopInUrl($page.url.searchParams);
 
-    function handleRetry() {
-        setLoadingLce();
-        fetchScreenData();
-    }
+	// the url is the truth: copy it into flightSearchStore (and the cache), so the sheet opens
+	// pre-filled and landing shows the same search when the user goes back
+	const syncStoreFromUrl = (p: ListingParams, nonStop: boolean) => {
+		// the user is editing in the sheet (or came back from search-city): don't overwrite the draft
+		// dont change url yet while editing
+		if (get(modifySheetOpen)) return;
+
+		const next = searchStateFromParams(p, nonStop, get(flightSearchStore), loadSearchFromCache());
+		flightSearchStore.set(next);
+		saveSearchToCache(next);
+	};
+	$: if (params) syncStoreFromUrl(params, nonStopOn);
+
+	// search-city saves the picked city in session storage; if the edit is abandoned it must not leak to landing
+	const clearPickedCities = clearPickedLocations;
+
+	const openModifySheet = () => modifySheetOpen.set(true);
+
+	// X / backdrop / Esc: throw the draft away and show what the url says again
+	const handleModifyClose = () => {
+		modifySheetOpen.set(false);
+		clearPickedCities();
+		if (params) syncStoreFromUrl(params, nonStopOn);
+	};
+
+	// Search pressed: FlightSearchBox already saved the cache and is replacing the url.
+	// Once the url changes, the sync above runs again with the new values
+	const handleModifySearched = () => {
+		modifySheetOpen.set(false);
+		clearPickedCities();
+	};
+
+	// runs once after mount, and again whenever the url params change (e.g. a new date)
+	$: if (mounted && params) loadListing(params);
+
+	let lastSearchKey = '';
+	// everything except the departure date: if it changes, it is a new search
+	const searchKeyOf = (p: ListingParams) => buildListingPath({ ...p, departDate: '' });
+
+	const loadListing = (p: ListingParams) => {
+		setLoadingLce();
+		const key = searchKeyOf(p);
+		if (key !== lastSearchKey) {
+			lastSearchKey = key;
+			stopFromUrlHandled = false;
+			resetFlightListing();
+			resetFareCalendar();
+			// on a round trip this stores an empty list (the strip is hidden), so no api call is made
+			loadFareCalendar(p);
+		}
+		fetchScreenData(p);
+	};
+
+	// user selected a date in the calendar: put it in the url.
+	// the url change re-runs loadListing above, and a reload keeps the chosen date
+	const handleDateSelect = (e: CustomEvent<CalendarDate>) => {
+		if (!params) return;
+		const { year, month, day } = e.detail;
+		if (year === selectedDate.year && month === selectedDate.month && day === selectedDate.day) {
+			return;
+		}
+		const departDate = dayjs(new Date(year, month - 1, day)).format('YYYY-MM-DD');
+		// a return date before the new departure would be invalid: move it to the same day
+		const returnDate =
+			params.returnDate && params.returnDate < departDate ? departDate : params.returnDate;
+		goto(
+			`${base}/flights/listing/${buildListingPath({ ...params, departDate, returnDate })}${
+				$page.url.search
+			}`,
+			{ replaceState: true }
+		);
+	};
+
+	// keeps the url honest about the Non-stop chip: selected -> ?sort_id=1&stop=0, else both removed.
+	// replaceState so Back doesn't step through every chip tap
+	const syncStopToUrl = () => {
+		const nonStopSelected = get(quickFilters).some(
+			(c: { filterType: string; filterValue: string; isSelected: boolean }) =>
+				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0' && c.isSelected
+		);
+		const url = new URL(location.href);
+		setListingNonStop(url.searchParams, nonStopSelected);
+		if (url.href === location.href) return;
+		goto(url, { replaceState: true, noscroll: true, keepfocus: true });
+	};
+
+	// a chip was toggled: refetch from the server with the new filters
+	const handleFilterChange = () => {
+		syncStopToUrl();
+		if (params) fetchScreenData(params, true);
+	};
+
+	// "Clear filters" button in the empty state
+	const handleClearFilters = () => {
+		clearQuickFilters();
+		syncStopToUrl();
+		if (params) fetchScreenData(params, true);
+	};
+
+	// isFilterRefetch = true  -> only the list area shows a loader
+	// isFilterRefetch = false -> full screen loader (already set by the caller)
+	const fetchScreenData = async (p: ListingParams, isFilterRefetch = false) => {
+		// increment the request counter to ignore responses from older requests
+		const currentRequest = ++requestCounter;
+		isListLoading = isFilterRefetch;
+
+		// calls the flights api with the values from the url and the selected quick-filter chips
+		const result = await callGetFlightsSearchListV2(buildListingRequest(p, get(quickFilters)));
+
+		// a newer request was fired while this one was in flight: ignore this response
+		if (currentRequest !== requestCounter) return;
+
+		isListLoading = false;
+
+		if (result.hasError()) {
+			// filters are applied and the server found nothing:
+			// stay on the listing so the user can clear the filters
+			const hasFiltersApplied = get(quickFilters).some(
+				(f: { isSelected: boolean }) => f.isSelected
+			);
+			if (hasFiltersApplied) {
+				// it keeps the chips so the user can clear them and empties the flight list
+				setNoFlights();
+				setContentLce();
+				return;
+			}
+
+			setErrorLce(result.error);
+			return;
+		}
+		// sets the api response in the store
+		setFlightListing(result.response as FlightListingResponse);
+		// url says stop=0 but the chips only exist now: select Non-stop and fetch again, so the
+		// shown flights are the non-stop api results. The full-screen loader stays up meanwhile
+		if (!stopFromUrlHandled) {
+			stopFromUrlHandled = true;
+			const nonStopChip = get(quickFilters).find(
+				(c: { filterType: string; filterValue: string }) =>
+					c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
+			);
+			if (nonStopOn && nonStopChip && !nonStopChip.isSelected) {
+				toggleQuickFilter('NO_OF_STOPS', '0');
+				return fetchScreenData(p, isFilterRefetch);
+			}
+		}
+		setContentLce();
+	};
+
+	// retry button in the error state
+	function handleRetry() {
+		setLoadingLce();
+		if (params) fetchScreenData(params);
+	}
+
+	// When the user clicks Modify, open your ModifySearchSheet
+	// instead of allowing the library to treat that click like its own action (such as Retry)
+	const handleErrorAreaClick = (e: MouseEvent) => {
+		const button = (e.target as HTMLElement | null)?.closest('button');
+		if (!button || !/modify/i.test(button.textContent ?? '')) return;
+
+		e.stopPropagation(); // capture phase: the library's own handler never sees this click
+		openModifySheet();
+	};
+	// the url's stop param changed without the path changing (e.g. Modify Search toggled non-stop
+	// and Search was pressed): make the Non-stop chip match the url and refetch.
+	// If the chip already matches (chip tap, first load), nothing happens, so no double fetch
+	const applyStopFromUrl = (wantOn: boolean) => {
+		const chip = get(quickFilters).find(
+			(c: { filterType: string; filterValue: string }) =>
+				c.filterType === 'NO_OF_STOPS' && c.filterValue === '0'
+		);
+		if (!chip || chip.isSelected === wantOn) return;
+		toggleQuickFilter('NO_OF_STOPS', '0');
+		if (params) fetchScreenData(params, true);
+	};
+	$: if (mounted && params) applyStopFromUrl(nonStopOn);
 </script>
 
-<div class="h-screen flex flex-col">
-    <AppBar title="Listing Screen" />
+<div
+	class="flex h-screen w-full flex-col overflow-x-hidden [@supports(height:100dvh)]:h-[100dvh] [&_nav.bg-secondary]:!rounded-none"
+>
+	<div class:invisible={$modifySheetOpen}>
+		<ListingAppBar on:edit={openModifySheet} />
+	</div>
+	<ModifySearchSheet
+		open={$modifySheetOpen}
+		on:close={handleModifyClose}
+		on:searched={handleModifySearched}
+	/>
 
-    {#if $lceStore.isLoading}
-        <div class="h-screen flex flex-col justify-center">
-            <PrimaryLoader />
-        </div>
-    {:else if $lceStore.hasError && $lceStore.errorDetails != null}
-        <ErrorHandling
-            errorHandling={$lceStore.errorDetails}
-            on:submit={handleRetry}
-        />
-    {:else if $lceStore.hasContent}
-        <div class="overflow-y-scroll w-full">
-          <!-- TODO: Remove this inner div and add screen specific code -->
-          <div class="flex flex-1 place-content-center h-screen">
-            <div class="place-content-center place-self-center heading-1">
-                Flights Listing Screen
-            </div>
-          </div>
-        </div>
-    {/if}
+	{#if showFareCalendar}
+		<div class="w-full min-w-0 bg-[#f0f0f5]">
+			<FareCalendar {selectedDate} on:select={handleDateSelect} />
+		</div>
+	{/if}
+
+	{#if !params}
+		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B] md:text-base">
+			{$flightsTranslationStore('flights.listing.invalid_link')}
+		</p>
+	{:else if $lceStore.isLoading}
+		<div class="flex flex-1 flex-col justify-center">
+			<PrimaryLoader />
+		</div>
+	{:else if $lceStore.hasError && $lceStore.errorDetails != null}
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="flex flex-1 flex-col" on:click|capture={handleErrorAreaClick}>
+			<ErrorHandling errorHandling={$lceStore.errorDetails} on:submit={handleRetry} />
+		</div>
+	{:else if $lceStore.hasContent}
+		{#if $isRoundTripListing}
+			<RoundTripContent {isListLoading} />
+		{:else}
+			<OneWayContent {isListLoading} on:change={handleFilterChange} on:clear={handleClearFilters} />
+		{/if}
+	{/if}
 </div>

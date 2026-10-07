@@ -1,0 +1,160 @@
+<script lang="ts">
+	import { base } from '$app/paths';
+	import { flightsTranslationStore } from '$flights/i18n.js';
+	import { flightSearchStore } from '$flights/stores/flightSearchStore.js';
+	import FlightIcon from '$lib/flights-commons/icons/FlightIcon.svelte';
+	import FlightToIcon from '$lib/flights-commons/icons/FlightToIcon.svelte';
+	import SwapIcon from '$lib/flights-commons/icons/SwapIcon.svelte';
+	import { NavigatorUtils } from '@CDNA-Technologies/svelte-vitals/navigator';
+	import { fly } from 'svelte/transition';
+
+	let swapTurns = 0;
+	let sourceSwapKey = 0;
+	let destinationSwapKey = 0;
+	let animateSwap = false; // true only while a swap is happening
+
+	const handleSourceClick = () =>
+		NavigatorUtils.navigateTo({
+			url: `${base}/flights/search-city?type=source&title=Search Source City`
+		});
+
+	const handleDestinationClick = () =>
+		NavigatorUtils.navigateTo({
+			url: `${base}/flights/search-city?type=destination&title=Search Destination City`
+		});
+
+	const handleSwapButtonClick = () => {
+		animateSwap = true;
+		swapTurns += 1;
+
+		sourceSwapKey += 1;
+		destinationSwapKey += 1;
+
+		flightSearchStore.update((current) => ({
+			...current,
+			source: current.destination,
+			destination: current.source
+		}));
+
+		// reset once the animation is done so it can't leak into other updates
+		setTimeout(() => (animateSwap = false), 300);
+	};
+
+	$: sourceLabel = $flightsTranslationStore('flights.location.from_label', {
+		city: $flightSearchStore.source.locationName,
+		code: $flightSearchStore.source.iataCode,
+		airport: $flightSearchStore.source.airportName
+			? `, ${$flightSearchStore.source.airportName}`
+			: ''
+	});
+
+	$: destinationLabel = $flightsTranslationStore('flights.location.to_label', {
+		city: $flightSearchStore.destination.locationName,
+		code: $flightSearchStore.destination.iataCode,
+		airport: $flightSearchStore.destination.airportName
+			? `, ${$flightSearchStore.destination.airportName}`
+			: ''
+	});
+
+	$: swapLabel = $flightsTranslationStore('flights.location.swap_label', {
+		from: $flightSearchStore.source.locationName,
+		to: $flightSearchStore.destination.locationName
+	});
+</script>
+
+<div class="relative flex w-full flex-col gap-2">
+	<!-- FROM -->
+	<button
+		type="button"
+		class="mb-1 flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left md:px-5 md:py-4"
+		aria-label={sourceLabel}
+		on:click={handleSourceClick}
+	>
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6" aria-hidden="true">
+			<FlightIcon />
+		</div>
+		{#key sourceSwapKey}
+			<div
+				class="min-w-0 flex-1"
+				aria-hidden="true"
+				in:fly={{ y: 14, duration: animateSwap ? 250 : 0 }}
+			>
+				<p class="text-sm leading-5 text-gray-500">
+					{$flightsTranslationStore('flights.from')}
+				</p>
+
+				<div class="flex items-center gap-2">
+					<span class="truncate text-lg font-semibold leading-6 text-black">
+						{$flightSearchStore.source.locationName}
+					</span>
+
+					<span
+						class="flex-shrink-0 rounded border border-gray-400 px-2 text-xs leading-5 text-black"
+					>
+						{$flightSearchStore.source.iataCode}
+					</span>
+				</div>
+
+				<p class="truncate text-sm leading-5 text-gray-500">
+					{$flightSearchStore.source.airportName ?? ''}
+				</p>
+			</div>
+		{/key}
+	</button>
+
+	<!-- TO -->
+	<button
+		type="button"
+		class="flex w-full items-center gap-4 rounded-xl bg-white px-4 py-3 text-left md:px-5 md:py-4"
+		aria-label={destinationLabel}
+		on:click={handleDestinationClick}
+	>
+		<div class="flex-shrink-0 text-gray-500 opacity-70 [&>svg]:h-6 [&>svg]:w-6" aria-hidden="true">
+			<FlightToIcon />
+		</div>
+
+		{#key destinationSwapKey}
+			<div
+				class="min-w-0 flex-1"
+				aria-hidden="true"
+				in:fly={{ y: -14, duration: animateSwap ? 250 : 0 }}
+			>
+				<p class="text-sm leading-5 text-gray-500">
+					{$flightsTranslationStore('flights.to')}
+				</p>
+
+				<div class="flex items-center gap-2">
+					<span class="truncate text-lg font-semibold leading-6 text-black">
+						{$flightSearchStore.destination.locationName}
+					</span>
+
+					<span
+						class="flex-shrink-0 rounded border border-gray-400 px-2 text-xs leading-5 text-black"
+					>
+						{$flightSearchStore.destination.iataCode}
+					</span>
+				</div>
+
+				<p class="truncate text-sm leading-5 text-gray-500">
+					{$flightSearchStore.destination.airportName ?? ''}
+				</p>
+			</div>
+		{/key}
+	</button>
+
+	<!-- SWAP -->
+	<button
+		type="button"
+		class="absolute right-6 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#4da3f0] bg-white text-[#4da3f0] transition-transform active:scale-95 md:right-8"
+		aria-label={swapLabel}
+		on:click={handleSwapButtonClick}
+	>
+		<span
+			class="flex transition-transform duration-300"
+			style="transform: rotate({swapTurns * 180}deg)"
+			aria-hidden="true"
+		>
+			<SwapIcon />
+		</span>
+	</button>
+</div>

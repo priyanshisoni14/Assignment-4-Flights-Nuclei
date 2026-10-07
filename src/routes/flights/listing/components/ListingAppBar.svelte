@@ -1,0 +1,81 @@
+<script lang="ts">
+	import { page } from '$app/stores';
+	import { flightsTranslationStore } from '$flights/i18n.js';
+	import AppBarFrame from '$lib/components/AppBarFrame.svelte';
+	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
+	import { parseListingDate, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
+	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
+	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
+	import dayjs from 'dayjs';
+	import { createEventDispatcher } from 'svelte';
+	const dispatch = createEventDispatcher<{ edit: void }>();
+
+	// "30 Sep". The parsing (and why it must not use new Date(iso)) lives in parseListingDate
+	const formatDate = (iso: string) => dayjs(parseListingDate(iso)).format('D MMM');
+
+	// "PREMIUM_ECONOMY" -> "Premium Economy"
+	const formatClass = (key: string) =>
+		key
+			.toLowerCase()
+			.split('_')
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(' ');
+
+	// everything comes from the url
+	$: search = parseListingParams($page.params.params ?? '');
+	$: travellerCount = search ? search.adults + search.children + search.infants : 0;
+	$: travellerLabel = `${travellerCount} ${travellerCount === 1 ? 'Traveller' : 'Travellers'}`;
+	$: isRoundTrip = !!search?.returnDate;
+	// "4 Oct - 7 Oct" for a round trip, "4 Oct" for one way
+	$: dates = search
+		? search.returnDate
+			? `${formatDate(search.departDate)} - ${formatDate(search.returnDate)}`
+			: formatDate(search.departDate)
+		: '';
+	$: subtitle = search
+		? `${dates} | ${travellerLabel} | ${formatClass(search.travelClass.key)}`
+		: '';
+
+	const handleBack = () => history.back();
+
+	const handleEditClick = () => {
+		NucleiLogger.logInfo('Flights', 'Edit option clicked');
+		dispatch('edit');
+	};
+</script>
+
+<AppBarFrame class="bg-[#112e47]">
+	<AppBar height="80px" enableZIndex showBackButton={true} onBackButtonClick={handleBack}>
+		<!-- both lines live in the title slot, so the back button and pencil
+		     centre against the whole two-line block -->
+		<svelte:fragment slot="title">
+			<div class="flex min-w-0 flex-col justify-center gap-[0.3125rem] text-white">
+				<p
+					class="flex min-w-0 items-center font-semibold leading-6 {isRoundTrip
+						? 'text-base md:text-xl'
+						: 'text-xl'}"
+				>
+					<span class="truncate">
+						{isRoundTrip ? `(${search?.src.iataCode}) ` : ''}{search?.src.city ?? ''}
+					</span>
+					<span class="mx-2 shrink-0 font-normal md:mx-3">{isRoundTrip ? '⇄' : '→'}</span>
+					<span class="truncate">
+						{isRoundTrip ? `(${search?.des.iataCode}) ` : ''}{search?.des.city ?? ''}
+					</span>
+				</p>
+				<p class="truncate text-sm font-medium leading-5">{subtitle}</p>
+			</div>
+		</svelte:fragment>
+
+		<div slot="action" class="flex h-full items-center">
+			<button
+				type="button"
+				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#112e47]"
+				aria-label={$flightsTranslationStore('flights.listing.edit_search')}
+				on:click={handleEditClick}
+			>
+				<PencilIcon />
+			</button>
+		</div>
+	</AppBar>
+</AppBarFrame>
