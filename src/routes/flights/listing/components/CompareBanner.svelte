@@ -55,7 +55,7 @@
 		<button
 			type="button"
 			class="absolute right-2 top-1.5 flex h-5 w-5 items-center justify-center md:right-3 md:top-2"
-			aria-label="Close banner"
+			aria-label={$flightsTranslationStore('flights.listing.close_banner')}
 			on:click|stopPropagation={handleClose}
 		>
 			<svg class="h-2 w-2" viewBox="0 0 12 12" fill="none" aria-hidden="true">

@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { flightsTranslationStore } from '$flights/i18n.js';
+	import AppBarFrame from '$lib/components/AppBarFrame.svelte';
 	import PencilIcon from '$lib/flights-commons/icons/PencilIcon.svelte';
 	import { parseListingDate, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
 	import dayjs from 'dayjs';
 	import { createEventDispatcher } from 'svelte';
-
 	const dispatch = createEventDispatcher<{ edit: void }>();
 
 	// "30 Sep". The parsing (and why it must not use new Date(iso)) lives in parseListingDate
@@ -43,15 +44,7 @@
 	};
 </script>
 
-<div
-	class="bg-[#112e47]
-	[&_nav.bg-secondary]:!bg-[#112e47]
-	[&_nav.bg-secondary_>_button]:!shadow-none
-	[&_nav.bg-secondary_>_button]:!p-0
-	[&_nav.bg-secondary_>_button_svg]:!fill-white
-	[&_nav.bg-secondary_>_button_svg]:!stroke-white
-	[&_nav.bg-secondary_>_button_svg_path]:!fill-white"
->
+<AppBarFrame class="bg-[#112e47]">
 	<AppBar height="80px" enableZIndex showBackButton={true} onBackButtonClick={handleBack}>
 		<!-- both lines live in the title slot, so the back button and pencil
 		     centre against the whole two-line block -->
@@ -78,38 +71,11 @@
 			<button
 				type="button"
 				class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#112e47]"
-				aria-label="Edit search"
+				aria-label={$flightsTranslationStore('flights.listing.edit_search')}
 				on:click={handleEditClick}
 			>
 				<PencilIcon />
 			</button>
 		</div>
 	</AppBar>
-</div>
-
-<style>
-	/* Back button - remove DaisyUI outline/border (same as LandingAppBar) */
-	:global(nav button[aria-label='Back button']) {
-		border: 0 !important;
-		border-width: 0 !important;
-		border-color: transparent !important;
-		outline: 0 !important;
-		box-shadow: none !important;
-		background: transparent !important;
-	}
-
-	:global(nav button[aria-label='Back button'] > div.bg-secondary) {
-		background-color: #112e47 !important;
-		border: 0 !important;
-		border-width: 0 !important;
-		border-color: transparent !important;
-		outline: 0 !important;
-		box-shadow: none !important;
-	}
-
-	:global(nav button[aria-label='Back button'] > div.bg-secondary svg),
-	:global(nav button[aria-label='Back button'] > div.bg-secondary svg path) {
-		fill: #ffffff !important;
-		stroke: #ffffff !important;
-	}
-</style>
+</AppBarFrame>

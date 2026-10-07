@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { flightsTranslationStore } from '$flights/i18n.js';
+	import AppBarFrame from '$lib/components/AppBarFrame.svelte';
 	import WalletIcon from '$lib/flights-commons/icons/WalletIcon.svelte';
 	import { LandingWalletCta } from '@CDNA-Technologies/svelte-vitals/cart/wallet';
 	import AppBar from '@CDNA-Technologies/svelte-vitals/components/appbar';
 	import ThreeDotMenu from '@CDNA-Technologies/svelte-vitals/components/three-dot-menu';
 	import { NucleiLogger } from '@CDNA-Technologies/svelte-vitals/logger';
-
 	// rn no specific action is required for the back button
 	// handle the menu click rn just logs the label
 	const handleMenuClick = (label: string, close: () => void) => {
@@ -27,14 +27,7 @@
 </script>
 
 <!-- navbar bg override + overflow-visible so the Rewards tag can sit above the buttons -->
-<div
-	class="[&_nav.bg-secondary]:!bg-[#112e47]
-	[&_nav.bg-secondary_>_button]:!shadow-none
-	[&_nav.bg-secondary_>_button]:!p-0
-	[&_nav.bg-secondary_>_button_svg]:!fill-white
-	[&_nav.bg-secondary_>_button_svg]:!stroke-white
-	[&_nav.bg-secondary_>_button_svg_path]:!fill-white"
->
+<AppBarFrame>
 	<AppBar
 		title={$flightsTranslationStore('flights.title')}
 		height="80px"
@@ -145,37 +138,4 @@
 			</div>
 		</div>
 	</AppBar>
-</div>
-
-<style>
-	/* Back button - remove DaisyUI outline/border */
-	:global(nav button[aria-label='Back button']) {
-		border: 0 !important;
-		border-width: 0 !important;
-		border-color: transparent !important;
-		outline: 0 !important;
-		box-shadow: none !important;
-		background: transparent !important;
-	}
-
-	/* Also remove any border from the inner back-button container */
-	:global(nav button[aria-label='Back button'] > div.bg-secondary) {
-		background-color: #112e47 !important;
-		border: 0 !important;
-		border-width: 0 !important;
-		border-color: transparent !important;
-		outline: 0 !important;
-		box-shadow: none !important;
-	}
-
-	/* Keep the arrow unchanged except for its white color */
-	:global(nav button[aria-label='Back button'] > div.bg-secondary svg) {
-		fill: #ffffff !important;
-		stroke: #ffffff !important;
-	}
-
-	:global(nav button[aria-label='Back button'] > div.bg-secondary svg path) {
-		fill: #ffffff !important;
-		stroke: #ffffff !important;
-	}
-</style>
+</AppBarFrame>

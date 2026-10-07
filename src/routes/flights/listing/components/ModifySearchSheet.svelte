@@ -1,9 +1,9 @@
 <script lang="ts">
-	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
 	import { flightsTranslationStore } from '$flights/i18n.js';
+	import FlightSearchBox from '$lib/flights-commons/flight-search-box/FlightSearchBox.svelte';
+	import CrossButton from '$lib/flights-commons/icons/CrossButton.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
-	import CrossButton from '$lib/flights-commons/icons/CrossButton.svelte';
 	export let open = false;
 	const dispatch = createEventDispatcher<{ close: void; searched: void }>();
 
@@ -34,7 +34,7 @@
 			<button
 				type="button"
 				class="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#112e47]"
-				aria-label="Close"
+				aria-label={$flightsTranslationStore('flights.close')}
 				on:click={close}
 			>
 				<CrossButton />
@@ -50,7 +50,7 @@
 		<button
 			type="button"
 			class="mx-auto mt-3 flex h-5 w-full items-center justify-center"
-			aria-label="Close"
+			aria-label={$flightsTranslationStore('flights.close')}
 			on:click={close}
 		>
 			<span class="h-1 w-10 rounded-full bg-[#CACACA]" />

@@ -1,4 +1,5 @@
 <script>
+	import { base } from '$app/paths';
 	import { flights } from '$flights/FlightsData.ts';
 	import { flightsTranslationStore } from '$flights/i18n.js';
 	import ChevronRightIcon from '$lib/flights-commons/icons/ChevronRightIcon.svelte';
@@ -9,7 +10,7 @@
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 		<h2 class="m-0 flex items-center">
 			<a
-				href="/flights"
+				href="{base}/flights"
 				class="flex items-center gap-1 text-xl font-semibold text-[#4EA1F1] hover:opacity-80"
 			>
 				{$flightsTranslationStore('flights.upcoming_flights')}
@@ -23,7 +24,7 @@
 			>
 				{$flightsTranslationStore('flights.new_badge_lowercase')}
 			</span>
-			<a href="/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]"
+			<a href="{base}/flights/web-check-in" class="text-base font-medium text-[#4EA1F1]"
 				>{$flightsTranslationStore('flights.web_check_in')}</a
 			>
 		</div>

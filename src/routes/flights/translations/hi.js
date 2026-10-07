@@ -105,4 +105,13 @@ export default {
 	'flights.select_departure_date': 'प्रस्थान की तारीख चुनें',
 	'flights.select_return_date': 'वापसी की तारीख चुनें',
 	'flights.appbar.wallet': 'वॉलेट',
+
+	'flights.close': 'बंद करें',
+	'flights.listing.close_banner': 'बैनर बंद करें',
+	'flights.listing.traveller_one': 'यात्री',
+	'flights.listing.traveller_other': 'यात्री',
+	'flights.promo.title': 'आसानी से अपनी फ़्लाइट बुक करें',
+	'flights.promo.code': 'कोड इस्तेमाल करें: FLYHIGH10',
+	'flights.promo.explore': 'देखें',
+	'flights.promo.explore_aria': 'ऑफ़र देखें',
 };

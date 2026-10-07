@@ -116,4 +116,13 @@ export default {
 	'flights.select_departure_date': 'Select Departure Date',
 	'flights.select_return_date': 'Select Return Date',
 	'flights.appbar.wallet': 'Wallet',
+
+	'flights.close': 'Close',
+	'flights.listing.close_banner': 'Close banner',
+	'flights.listing.traveller_one': 'Traveller',
+	'flights.listing.traveller_other': 'Travellers',
+	'flights.promo.title': 'Book Your Flight with Ease',
+	'flights.promo.code': 'Use code: FLYHIGH10',
+	'flights.promo.explore': 'Explore',
+	'flights.promo.explore_aria': 'Explore offers',
 };
