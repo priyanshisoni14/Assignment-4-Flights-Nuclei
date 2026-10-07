@@ -2,13 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
-	import { callGetFlightsSearchListV2, getFareCalendar } from '$flights/api/flights-api.js';
-	import {
-		fareCalendarStore,
-		resetFareCalendar,
-		setFareCalendar,
-		setFareCalendarLoading
-	} from '$flights/stores/fareCalendarStore.js';
+	import { callGetFlightsSearchListV2 } from '$flights/api/flights-api.js';
+	import { flightsTranslationStore } from '$flights/i18n.js';
+	import { fareCalendarStore, resetFareCalendar } from '$flights/stores/fareCalendarStore.js';
 	import {
 		clearQuickFilters,
 		isRoundTripListing,
@@ -21,20 +17,21 @@
 	import { flightSearchStore, modifySheetOpen } from '$flights/stores/flightSearchStore.js';
 	import type { CalendarDate } from '$lib/flights-commons/messages/flights-fare-calendar-msg.js';
 	import type { FlightListingResponse } from '$lib/flights-commons/messages/flights-listing-msg.js';
-	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
-	import { buildAppliedSortFilter } from '$lib/flights-commons/utils/flight-filter-utils.js';
 	import {
+		loadFareCalendar,
+		toCalendarDate
+	} from '$lib/flights-commons/utils/fare-calendar-util.js';
+	import { ensureFlightConfig } from '$lib/flights-commons/utils/flight-config-loader.js';
+	import {
+		clearPickedLocations,
 		loadSearchFromCache,
 		saveSearchToCache
 	} from '$lib/flights-commons/utils/flight-search-cache-util.js';
+	import { buildListingRequest } from '$lib/flights-commons/utils/listing-request.js';
+	import { searchStateFromParams } from '$lib/flights-commons/utils/listing-search-sync.js';
 	import type { ListingParams } from '$lib/flights-commons/utils/listing-url.js';
-	import {
-		buildListingPath,
-		parseListingDate,
-		parseListingParams
-	} from '$lib/flights-commons/utils/listing-url.js';
+	import { buildListingPath, parseListingParams } from '$lib/flights-commons/utils/listing-url.js';
 	import { isNonStopInUrl, setListingNonStop } from '$lib/flights-commons/utils/non-stop-param.js';
-	import { fromFareType } from '$lib/flights-commons/utils/special-fare.js';
 	import PrimaryLoader from '@CDNA-Technologies/svelte-vitals/components/primary-loader';
 	import {
 		ErrorHandling,
@@ -56,6 +53,7 @@
 	import RoundTripFooter from './RoundTripFooter.svelte';
 	import RoundTripListing from './RoundTripListing.svelte';
 	import RoundTripTabs from './RoundTripTabs.svelte';
+
 	// the url is the single source of truth for the search, so a hard reload keeps everything.
 	// routeKey is a string, so params is only rebuilt when the url segments really change
 	$: routeKey = $page.params.params ?? '';
@@ -95,48 +93,14 @@
 		// dont change url yet while editing
 		if (get(modifySheetOpen)) return;
 
-		const cached = loadSearchFromCache();
-		const current = get(flightSearchStore);
-		// the url has no airport name, so take it from whichever source knows this iata code
-		const airportName = (iata: string) =>
-			[current.source, current.destination, cached?.source, cached?.destination].find(
-				(l) => l?.iataCode === iata && l.airportName
-			)?.airportName;
-
-		const next = {
-			...current,
-			source: {
-				locationName: p.src.city,
-				iataCode: p.src.iataCode,
-				airportName: airportName(p.src.iataCode),
-				countryCode: p.src.countryCode
-			},
-			destination: {
-				locationName: p.des.city,
-				iataCode: p.des.iataCode,
-				airportName: airportName(p.des.iataCode),
-				countryCode: p.des.countryCode
-			},
-			departureDate: parseListingDate(p.departDate),
-			isRoundTrip: p.returnDate !== null,
-			returnDate: p.returnDate ? parseListingDate(p.returnDate) : undefined,
-			adults: p.adults,
-			children: p.children,
-			infants: p.infants,
-			travelClass: p.travelClass.key,
-			nonStopOnly: nonStop,
-			specialFare: fromFareType(p.fareType)
-		};
+		const next = searchStateFromParams(p, nonStop, get(flightSearchStore), loadSearchFromCache());
 		flightSearchStore.set(next);
 		saveSearchToCache(next);
 	};
 	$: if (params) syncStoreFromUrl(params, nonStopOn);
 
-	// search-city saves the picked city here; if the edit is abandoned it must not leak to landing
-	const clearPickedCities = () => {
-		sessionStorage.removeItem('flights_selected_source');
-		sessionStorage.removeItem('flights_selected_destination');
-	};
+	// search-city saves the picked city in session storage; if the edit is abandoned it must not leak to landing
+	const clearPickedCities = clearPickedLocations;
 
 	const openModifySheet = () => modifySheetOpen.set(true);
 
@@ -169,51 +133,10 @@
 			stopFromUrlHandled = false;
 			resetFlightListing();
 			resetFareCalendar();
-			// the strip is hidden on round trips, so don't pay for the call
-			if (p.returnDate === null) fetchFareCalendar(p);
-			else setFareCalendar([]);
+			// on a round trip this stores an empty list (the strip is hidden), so no api call is made
+			loadFareCalendar(p);
 		}
 		fetchScreenData(p);
-	};
-	// convert a dayjs date to the fare calendar api format
-	function toCalendarDate(d: dayjs.Dayjs): CalendarDate {
-		return { year: d.year(), month: d.month() + 1, day: d.date() };
-	}
-
-	// to call the fare calendar api using the search parameters from the url
-	const fetchFareCalendar = async (p: ListingParams) => {
-		// round trip: the strip is hidden, so skip the api call
-		if (p.returnDate !== null) {
-			setFareCalendar([]);
-			return;
-		}
-		setFareCalendarLoading();
-
-		const start = dayjs(); // today
-		const defaultEnd = start.add(15, 'day'); // 15 days from today
-		const depart = dayjs(p.departDate);
-		// make sure the searched date is always inside the requested window
-		// if the depart date is outside the calendar window, it extends the window
-		const end = depart.isAfter(defaultEnd) ? depart.add(7, 'day') : defaultEnd;
-
-		const result = await getFareCalendar({
-			categoryId: 7,
-			startDate: toCalendarDate(start),
-			endDate: toCalendarDate(end),
-			travellers: { adultCount: p.adults, childCount: p.children, infantCount: p.infants },
-			additionalInfo: {
-				sourceCode: p.src.iataCode,
-				destCode: p.des.iataCode,
-				isRoundTrip: String(p.returnDate !== null)
-			}
-		});
-
-		// on failure or when the feature is disabled, store an empty list so the calendar hides
-		setFareCalendar(
-			!result.hasError() && result.response?.enabled
-				? result.response.onwardJourneyFareDetails ?? []
-				: []
-		);
 	};
 
 	// user selected a date in the calendar: put it in the url.
@@ -269,35 +192,8 @@
 		const currentRequest = ++requestCounter;
 		isListLoading = isFilterRefetch;
 
-		// calls the flights api with the values from the url
-		const result = await callGetFlightsSearchListV2({
-			src: {
-				iataCode: p.src.iataCode,
-				city: p.src.city,
-				name: p.src.city,
-				countryCode: p.src.countryCode,
-				iconUrl: ''
-			},
-			des: {
-				iataCode: p.des.iataCode,
-				city: p.des.city,
-				name: p.des.city,
-				countryCode: p.des.countryCode,
-				iconUrl: ''
-			},
-			// callGetFlightsSearchListV2 reformats these to DD-MM-YYYY itself
-			departDate: p.departDate,
-			returnDate: p.returnDate ?? '',
-			travellerClass: p.travelClass as Parameters<
-				typeof callGetFlightsSearchListV2
-			>[0]['travellerClass'],
-			passenger: { adultCount: p.adults, childCount: p.children, infantCount: p.infants },
-			// converts the selected quick-filter chips into the request's appliedSortFilter
-			appliedSortFilter: buildAppliedSortFilter(get(quickFilters)),
-			is_round_trip: p.returnDate !== null,
-			partnerCountry: p.partnerCountry,
-			fareType: p.fareType
-		});
+		// calls the flights api with the values from the url and the selected quick-filter chips
+		const result = await callGetFlightsSearchListV2(buildListingRequest(p, get(quickFilters)));
 
 		// a newer request was fired while this one was in flight: ignore this response
 		if (currentRequest !== requestCounter) return;
@@ -389,7 +285,7 @@
 
 	{#if !params}
 		<p class="flex-1 p-6 text-center text-sm text-[#6B6B6B] md:text-base">
-			This search link is not valid. Please go back and search again.
+			{$flightsTranslationStore('flights.listing.invalid_link')}
 		</p>
 	{:else if $lceStore.isLoading}
 		<div class="flex flex-1 flex-col justify-center">
